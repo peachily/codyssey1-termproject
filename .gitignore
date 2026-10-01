@@ -21,6 +21,11 @@ dist/
 *.egg-info/
 .eggs/
 
+# React / Vite generated files
+node_modules/
+.vite/
+*.local
+
 # Coverage and logs
 .coverage
 .coverage.*
