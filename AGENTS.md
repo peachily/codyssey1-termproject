@@ -74,3 +74,29 @@ Types:
 - 작업명은 짧은 영문 소문자로 작성합니다.
 - 작업자의 GitHub ID를 사용합니다.
 - GitHub ID가 명확하지 않으면 임의로 추측하지 말고 사용자에게 확인합니다.
+
+### Pull Request Convention
+
+PR 제목은 커밋 컨벤션과 동일하게 작성합니다.
+
+형식: `<type>: <한글 설명>`
+
+예시:
+
+- `feat: 로그인 기능 구현`
+- `fix: AI 응답 오류 처리 수정`
+- `docs: API 명세 추가`
+- `chore: Railway 배포 설정 추가`
+
+PR 본문은 `.github/pull_request_template.md` 형식을 따릅니다.
+
+PR 생성 규칙:
+
+- feature, fix, chore, docs 브랜치에서 작업한 내용은 Pull Request를 통해 병합합니다.
+- 기능 개발 브랜치는 기본적으로 develop을 base branch로 사용합니다.
+- main에는 직접 기능 PR을 생성하지 않습니다.
+- main 반영은 develop → main Pull Request를 통해 진행합니다.
+- PR 생성 전 현재 브랜치, 변경사항, commit 및 push 상태를 확인합니다.
+- PR 제목과 본문은 실제 변경 내용을 기준으로 작성합니다.
+- GitHub CLI를 사용할 수 있는 경우 `gh pr create`를 사용합니다.
+- 사용자가 명시적으로 요청하지 않은 PR merge는 수행하지 않습니다.
