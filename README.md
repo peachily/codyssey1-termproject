@@ -62,3 +62,10 @@ python -m uvicorn app.main:app --reload --env-file .env
 - API 문서: <http://127.0.0.1:8000/docs>
 
 서버 종료는 `Ctrl+C`를 사용합니다.
+
+## Git 협업
+
+- 실제 기능 개발은 develop에서 feature 브랜치를 만들어 진행합니다.
+- feature 브랜치 → Pull Request → develop 순서로 병합합니다.
+- main은 최종 배포용 브랜치입니다.
+- 커밋 메시지는 `<type>: <한글 설명>` 형식을 사용합니다.
