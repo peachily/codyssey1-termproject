@@ -40,3 +40,11 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Local SQLite data
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
