@@ -30,7 +30,7 @@
 | Backend | Python, FastAPI, Uvicorn, Pydantic |
 | Database | SQLite, SQLAlchemy 2.x ORM |
 | 인증 | Starlette SessionMiddleware 세션 쿠키, pwdlib[argon2] |
-| AI | Google Gemini Developer API, google-genai, `gemini-3.5-flash-lite` |
+| AI | Codyssey 제공 OpenAI 호환 Chat Completions API, requests, `gpt-5-mini` |
 | 배포 | Railway |
 
 ## 4. 시스템 구조
@@ -49,8 +49,9 @@ Python 3.14, Node.js 22(22.12 이상), npm을 준비하고 저장소 루트에�
 | --- | --- |
 | `SECRET_KEY` | 세션 쿠키 서명 |
 | `DATABASE_URL` | SQLite 연결 URL |
-| `GEMINI_API_KEY` | Gemini API 인증 |
-| `GEMINI_MODEL` | 모델 이름 (`gemini-3.5-flash-lite`) |
+| `CODYSSEY_API_KEY` | Codyssey API 인증용 virtual key |
+| `AI_API_URL` | API URL (`https://copa.codyssey.kr/v1/chat/completions`) |
+| `AI_MODEL` | 모델 이름 (`gpt-5-mini`) |
 | `AI_TIMEOUT` | AI 요청 제한 시간(초, 기본값 30) |
 
 `.env.example`을 프로젝트 루트의 `.env`로 복사한 뒤 값을 입력합니다. `.env`는 Git에서 제외됩니다.
@@ -109,7 +110,9 @@ FastAPI는 시작 시 `frontend/dist`의 빌드 결과를 제공합니다.
 
 ## 6. 배포
 
-<!-- TODO: 실제 Railway 서비스 URL 및 최종 배포 정보 -->
+서비스 접속: [https://codyssey1-termproject-production.up.railway.app](https://codyssey1-termproject-production.up.railway.app)
+
+<!-- TODO: 최종 배포 정보 -->
 
 ## 7. 상세 문서
 

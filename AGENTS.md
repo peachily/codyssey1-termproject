@@ -50,9 +50,13 @@
 
 ### AI 및 Context
 
-- Google Gemini Developer API와 Python SDK `google-genai`를 사용합니다.
-- 모델은 `gemini-3.5-flash-lite`이며 `GEMINI_MODEL`로 설정합니다. API Key는 `GEMINI_API_KEY`로 전달합니다.
-- AI API 호출은 반드시 FastAPI 서버에서 수행합니다. React에서 Gemini API를 직접 호출하지 않습니다.
+- Codyssey 제공 OpenAI 호환 Chat Completions API를 Python `requests`로 호출합니다.
+- 요청 URL은 `AI_API_URL`로 설정하며 기본값은 `https://copa.codyssey.kr/v1/chat/completions`입니다. 모델은 `AI_MODEL`로 설정하며 기본값은 `gpt-5-mini`입니다.
+- `CODYSSEY_API_KEY`에서 virtual key를 읽어 `Authorization: Bearer <virtual-key>` 헤더로 전달합니다. 실제 키는 로컬 `.env` 또는 Railway Variables에만 설정하며 코드·문서·로그에 남기지 않습니다.
+- POST 요청의 JSON에는 `model`과 `messages`를 전달하고, 응답의 `choices[0].message.content`를 AI 답변으로 사용합니다.
+- 최근 Q/A는 `user`·`assistant` 메시지로 순서대로 구성하고 마지막에 현재 질문을 `user` 메시지로 추가합니다.
+- 요청에는 `AI_TIMEOUT`을 timeout으로 적용하고 HTTP 오류도 AI 호출 실패로 처리합니다.
+- AI API 호출은 반드시 FastAPI 서버에서 수행합니다. React에서 Codyssey API를 직접 호출하지 않습니다.
 - AI 연동 코드는 `app/services/ai.py`에 격리합니다.
 - 같은 사용자의 최근 최대 5개 Q/A를 DB에서 조회하고 시간순으로 정렬하여 현재 질문과 함께 AI에 전달합니다. 다른 사용자의 대화는 포함하지 않습니다.
 - 별도 벡터 DB, RAG, 장기 메모리 시스템은 사용하지 않습니다.
@@ -79,7 +83,7 @@
 
 - 기본 Timeout은 30초이며 `AI_TIMEOUT`으로 설정합니다.
 - Timeout은 HTTP 504, 기타 AI API 실패는 HTTP 502로 응답하고 `ai_call_failure`를 기록합니다.
-- Gemini/AI 호출 자체가 실패하거나 Timeout이 발생하면 chat을 DB에 저장하지 않습니다.
+- AI 호출 자체가 실패하거나 Timeout이 발생하면 chat을 DB에 저장하지 않습니다.
 - 오류가 발생해도 서버가 비정상 종료되지 않아야 합니다. 오류 응답은 `detail` 형식을 사용하고, 사용자 안내 문구는 React에서 표시할 수 있습니다.
 
 ### DB 저장 실패
@@ -87,7 +91,7 @@
 - 회원가입 및 대화 저장에 실패하면 해당 트랜잭션을 rollback하고 `db_save_failure`를 기록한 뒤 HTTP 500을 반환합니다. username 중복은 rollback 후 계약에 따라 HTTP 409로 처리합니다.
 - `user_id` 또는 `request_id` 등 가능한 추적 정보를 로그에 포함하되, 비밀번호·API Key·세션 비밀값을 기록하거나 내부 DB 오류를 응답에 노출하지 않습니다.
 - 저장이 성공적으로 commit된 뒤에만 `db_save_success`를 기록하고 성공 응답을 반환합니다. AI 응답을 받았더라도 대화 저장에 실패하면 성공으로 응답하지 않습니다.
-- `POST /api/chat`에서 Gemini 응답을 정상적으로 받았더라도 DB 저장에 실패하면 트랜잭션을 rollback하고 `db_save_failure`를 기록한 뒤 HTTP 500과 `{"detail": "Failed to save chat"}`을 반환합니다.
+- `POST /api/chat`에서 AI 응답을 정상적으로 받았더라도 DB 저장에 실패하면 트랜잭션을 rollback하고 `db_save_failure`를 기록한 뒤 HTTP 500과 `{"detail": "Failed to save chat"}`을 반환합니다.
 
 ## Logging
 
@@ -380,7 +384,7 @@ frontend/
 | --- | --- | --- |
 | 인증 · 사용자 관리 | `/api/auth/*`, 인증·세션, 접근 제어 | `app/routers/auth.py`, `app/services/auth.py` |
 | DB · 대화 기록 | DB 연결, User/Chat 모델, 대화 저장·조회 | `app/database.py`, `app/models.py`, `app/routers/history.py` |
-| AI 챗봇 | Gemini 호출, `/api/chat` AI 처리, 최근 5개 문맥, Timeout·오류 처리 | `app/services/ai.py`, `app/routers/chat.py` |
+| AI 챗봇 | Codyssey API 호출, `/api/chat` AI 처리, 최근 5개 문맥, Timeout·오류 처리 | `app/services/ai.py`, `app/routers/chat.py` |
 | 웹 UI · API 연결 | 회원가입·로그인 화면, 챗봇 화면, 대화 기록 화면, FastAPI API와 React 연결 | `frontend/` |
 
 - 각 담당자는 자기 영역의 입력 검증, 예외 처리, 필요한 로그까지 함께 구현합니다.
@@ -394,15 +398,17 @@ frontend/
 ```dotenv
 SECRET_KEY=
 DATABASE_URL=
-GEMINI_API_KEY=
-GEMINI_MODEL=gemini-3.5-flash-lite
+CODYSSEY_API_KEY=
+AI_API_URL=https://copa.codyssey.kr/v1/chat/completions
+AI_MODEL=gpt-5-mini
 AI_TIMEOUT=30
 ```
 
 - `SECRET_KEY`: 세션 쿠키 인증에 사용하는 비밀값
 - `DATABASE_URL`: 로컬 또는 배포 SQLite DB 연결 경로
-- `GEMINI_API_KEY`: 서버에서 사용하는 Gemini API Key
-- `GEMINI_MODEL`: Gemini 모델 이름
+- `CODYSSEY_API_KEY`: 서버에서 사용하는 Codyssey virtual key
+- `AI_API_URL`: Codyssey Chat Completions API URL
+- `AI_MODEL`: AI 모델 이름
 - `AI_TIMEOUT`: AI API Timeout 시간(초)
 - 프론트 환경 변수가 필요하면 `VITE_` 접두사를 사용합니다. 예: `VITE_API_BASE_URL=`.
 - `VITE_` 환경 변수에는 민감정보를 넣지 않습니다.
