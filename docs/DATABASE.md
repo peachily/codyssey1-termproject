@@ -110,5 +110,5 @@ Railway Volume 확인 예시: python scripts/check_db.py --database /data/chatbo
 
 협업 규칙 이슈 #9에서 DB 구조와 서버 연결 예정 영역을 함께 확인 가능. 그림의 HTTP·인증·AI 동작은 서버 담당 연결 안내이며 DB 구현 완료 범위와 구분.
 
-- [ERD](https://raw.githubusercontent.com/peachily/codyssey1-termproject/3e4c90dcecf683adfbfd4ce26f9ad06335010aed/docs/diagrams/kkamuruk-erd.png)
-- [아키텍처](https://raw.githubusercontent.com/peachily/codyssey1-termproject/3e4c90dcecf683adfbfd4ce26f9ad06335010aed/docs/diagrams/kkamuruk-architecture.png)
+- [ERD](https://raw.githubusercontent.com/peachily/codyssey1-termproject/833127e3301ebe9a6503d947b3b985ea187fa34e/docs/diagrams/kkamuruk-erd.png)
+- [아키텍처](https://raw.githubusercontent.com/peachily/codyssey1-termproject/833127e3301ebe9a6503d947b3b985ea187fa34e/docs/diagrams/kkamuruk-architecture.png)
