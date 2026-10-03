@@ -94,10 +94,9 @@ class ModelTests(unittest.TestCase):
             with patch.object(database, "engine", self.engine):
                 with patch.object(database, "initialize_database", wraps=database.initialize_database) as initialize:
                     with patch.object(self.engine, "dispose", wraps=self.engine.dispose) as dispose:
-                        with patch.object(main.app.state, "session_secret", "test-key"):
-                            async with main.app.router.lifespan_context(main.app):
-                                initialize.assert_called_once_with(self.engine)
-                                self.assertEqual(main.health(), {"status": "ok"})
+                        async with main.app.router.lifespan_context(main.app):
+                            initialize.assert_called_once_with(self.engine)
+                            self.assertEqual(main.health(), {"status": "ok"})
                         dispose.assert_called_once_with()
 
         asyncio.run(run_lifespan())
