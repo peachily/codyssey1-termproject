@@ -105,3 +105,10 @@ Railway Volume 확인 예시: python scripts/check_db.py --database /data/chatbo
 - [SQLite 조회 계획과 복합 인덱스](https://www.sqlite.org/queryplanner.html)
 - [SQLite EXPLAIN QUERY PLAN](https://www.sqlite.org/eqp.html)
 - [SQLAlchemy 관계 로딩과 N+1](https://docs.sqlalchemy.org/en/20/orm/queryguide/relationships.html)
+
+## 설계 이미지
+
+협업 규칙 이슈 #9에서 DB 구조와 서버 연결 예정 영역을 함께 확인 가능. 그림의 HTTP·인증·AI 동작은 서버 담당 연결 안내이며 DB 구현 완료 범위와 구분.
+
+- [ERD](https://raw.githubusercontent.com/peachily/codyssey1-termproject/3e4c90dcecf683adfbfd4ce26f9ad06335010aed/docs/diagrams/kkamuruk-erd.png)
+- [아키텍처](https://raw.githubusercontent.com/peachily/codyssey1-termproject/3e4c90dcecf683adfbfd4ce26f9ad06335010aed/docs/diagrams/kkamuruk-architecture.png)

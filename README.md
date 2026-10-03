@@ -124,3 +124,14 @@ Railway Variables에 위 환경 변수 등록 및 /data 경로 Volume 마운트�
 - [DB 구조 및 저장 내용 확인 방법](docs/DATABASE.md)
 - [팀 역할 및 개인별 작업 내역](docs/TEAM.md)
 - [인증·AI 담당 연동 안내](docs/INTEGRATION.md)
+
+## 8. DB 검증
+
+프로젝트 루트에서 아래 명령 실행:
+
+```sh
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
+```
+
+DB 연결·제약·저장 실패 rollback·사용자별 조회·복합 인덱스·읽기 전용 확인 도구의 23개 테스트 검증. 로컬 검증 환경은 Python 3.12이며 배포 설정의 Python 3.14 및 Railway 실제 재배포 검증은 별도 진행 필요. HTTP 라우터·인증·AI 통합 테스트는 서버 담당 연결 후 수행.
