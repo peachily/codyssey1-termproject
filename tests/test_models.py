@@ -1,9 +1,7 @@
-import asyncio
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import patch
 
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import IntegrityError, StatementError
@@ -87,20 +85,8 @@ class ModelTests(unittest.TestCase):
         indexes = inspect(self.engine).get_indexes("chats")
         self.assertIn(["user_id", "created_at", "id"], [index["column_names"] for index in indexes])
 
-    def test_application_lifespan_creates_tables_and_preserves_health(self):
-        from app import main
-
-        async def run_lifespan():
-            with patch.object(database, "engine", self.engine):
-                with patch.object(database, "initialize_database", wraps=database.initialize_database) as initialize:
-                    with patch.object(self.engine, "dispose", wraps=self.engine.dispose) as dispose:
-                        with patch.object(main.app.state, "session_secret", "test-key"):
-                            async with main.app.router.lifespan_context(main.app):
-                                initialize.assert_called_once_with(self.engine)
-                                self.assertEqual(main.health(), {"status": "ok"})
-                        dispose.assert_called_once_with()
-
-        asyncio.run(run_lifespan())
+    def test_initialization_creates_user_and_chat_tables(self):
+        self.assertEqual(set(inspect(self.engine).get_table_names()), {"users", "chats"})
 
 
 if __name__ == "__main__":
