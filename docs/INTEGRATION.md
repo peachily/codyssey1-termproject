@@ -7,8 +7,8 @@ DB 구현은 사용자와 대화 Q/A 저장 및 조회 기반 제공. 회원가�
 - app.database.get_db: FastAPI Depends로 요청별 Session 전달
 - app.models.User: id, username, password_hash, created_at 제공
 - app.models.Chat: id, user_id, question, answer, created_at 제공
-- app.dependencies.get_current_user: 세션의 정수 user_id 및 DB 사용자 존재 확인, 실패 시 HTTP 401
-- app.main.create_app: SessionMiddleware, 시작 시 테이블 초기화, ChatSaveError 처리 등록
+- app.database.SessionLocal: 직접 세션 생성이 필요한 서버 코드용 팩토리
+- 인증 의존성, SessionMiddleware, 시작 시 초기화 및 ChatSaveError의 HTTP 변환: 서버 담당 구현 대상
 - 라우터 등록: app/main.py의 React 정적 파일 mount 이전 위치 사용
 
 ## 인증 담당
@@ -23,9 +23,19 @@ request.session.clear()
 request.session["user_id"] = user.id
 ```
 
-문자열 또는 bool user_id는 인증 실패 처리. 클라이언트가 전달한 사용자 ID를 인증 근거로 사용 금지. 로그아웃은 request.session.clear() 적용. 다른 인증 필요 라우터에서도 Depends(get_current_user) 재사용 가능. 비밀번호·해시를 세션 및 응답에 포함하지 않음.
+서버 담당은 문자열 또는 bool user_id를 인증 실패 처리하도록 검증 권장. 클라이언트가 전달한 사용자 ID를 인증 근거로 사용 금지. 로그아웃은 request.session.clear() 적용. 인증 의존성은 서버 담당이 구현 후 인증 필요 라우터에서 재사용 권장. 비밀번호·해시를 세션 및 응답에 포함하지 않음.
 
-SECRET_KEY는 시작 전에 환경 변수로 제공. 빈 값이면 시작 거부. SESSION_HTTPS_ONLY는 HTTPS 배포에서 true, 로컬 HTTP에서는 false 설정. .env 파일은 uvicorn의 --env-file .env 옵션 또는 배포 환경의 Variables로 로딩.
+SECRET_KEY와 HTTPS 쿠키 정책은 서버 담당의 세션 구현에서 검증·설정 필요. DB 작업에서는 앱 시작 및 세션 정책을 변경하지 않음. .env 파일은 uvicorn의 --env-file .env 옵션 또는 배포 환경의 Variables로 로딩.
+
+초기화 연결 예시(서버 담당의 lifespan 시작 단계):
+
+```python
+from app import models  # Base에 User·Chat 테이블 등록
+from app.database import engine, initialize_database
+
+initialize_database(engine)
+# 앱 종료 단계에서 engine.dispose() 호출
+```
 
 ## AI 담당
 
@@ -54,13 +64,13 @@ saved = save_chat(db, user_id, validated_message, answer)
 
 AI 호출 중 쓰기 트랜잭션을 열거나 미리 빈 Chat을 삽입하지 않음. 실패·timeout에서는 save_chat 호출 금지. AI timeout은 HTTP 504, 기타 호출 실패는 HTTP 502로 처리하며 AI 담당 로그 이벤트 기록 필요.
 
-저장 실패 시 save_chat은 rollback 후 ChatSaveError 발생. app/main.py의 전역 처리기가 HTTP 500과 detail: Failed to save chat 반환. 오류를 잡아서 성공 응답으로 바꾸지 않음. 질문·응답 및 내부 DB 오류 원문을 로그에 추가하지 않음.
+저장 실패 시 save_chat은 rollback 후 ChatSaveError 발생. 서버 담당의 예외 처리기에서 HTTP 500과 detail: Failed to save chat으로 변환 필요. 현재 DB 구현에는 HTTP 예외 처리기가 포함되지 않음. 오류를 잡아서 성공 응답으로 바꾸지 않음. 질문·응답 및 내부 DB 오류 원문을 로그에 추가하지 않음.
 
 save_chat은 전달한 세션 전체를 commit하므로 관계없는 변경을 같은 세션에 넣지 않음. 위 rollback도 무관한 미저장 변경을 취소할 수 있으므로 전제 유지 필요. DB 함수 연결 후 인증·AI 호출의 실제 통합 시나리오는 해당 담당자와 공동 검증 필요.
 
 ## KKAMURUK 마법약 처방 제안 계약
 
-현재 저장 범위는 일반 대화 Q/A이며 최종 처방의 keyword, color, message는 별도 저장·조회하지 않음. 기존 POST /api/chat 응답 계약과 GET /api/me/chats 응답은 유지. 처방 전용 endpoint 경로 및 요청·응답 확정은 팀 협의 사항이며 이 문서는 해당 API 구현 완료를 의미하지 않음.
+현재 저장 범위는 일반 대화 Q/A이며 최종 처방의 keyword, color, message는 별도 저장·조회하지 않음. 기존 POST /api/chat 및 GET /api/me/chats 팀 계약은 유지하며 실제 라우터 구현은 서버 담당 범위. 처방 전용 endpoint 경로 및 요청·응답 확정은 팀 협의 사항이며 이 문서는 해당 API 구현 완료를 의미하지 않음.
 
 서버에서 keyword를 아래 enum으로 검증하고 color를 고정 매핑하는 방식 제안. AI가 임의로 반환한 색상이나 미정의 keyword를 그대로 신뢰하지 않는 설계. message는 처방 설명이며 실제 검증 규칙은 AI 담당과 합의 필요.
 

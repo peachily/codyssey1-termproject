@@ -47,8 +47,7 @@ Python 3.14, Node.js 22(22.12 이상), npm을 준비하고 저장소 루트에�
 
 | 키 | 용도·설정 예시 |
 | --- | --- |
-| SECRET_KEY | 세션 쿠키 서명용 충분히 긴 무작위 비밀값. 빈 값이면 서버 시작 거부 |
-| SESSION_HTTPS_ONLY | 로컬 HTTP는 false, Railway HTTPS는 true |
+| SECRET_KEY | 서버 담당의 세션 쿠키 서명용 비밀값 |
 | DATABASE_URL | 로컬 sqlite:///./chatbot.db, Railway sqlite:////data/chatbot.db |
 | CODYSSEY_API_KEY | Codyssey API 인증용 virtual key. 서버 환경에만 등록 |
 | AI_API_URL | AI 담당 연동 설정: https://copa.codyssey.kr/v1/chat/completions |
@@ -57,7 +56,7 @@ Python 3.14, Node.js 22(22.12 이상), npm을 준비하고 저장소 루트에�
 
 .env.example의 모든 값은 빈 자리표시자입니다. 프로젝트 루트의 .env로 복사한 뒤 실제 값을 입력합니다. .env는 Git에서 제외됩니다. AI 관련 설정의 적용은 AI 담당 구현과 함께 확인합니다.
 
-앱은 .env를 자동으로 읽지 않습니다. 아래 실행 명령에 --env-file .env를 추가하거나 프로세스 환경 변수로 값을 전달해야 합니다. SECRET_KEY는 실행 전에 반드시 설정합니다. DATABASE_URL이 비어 있으면 로컬 ./chatbot.db 사용, SESSION_HTTPS_ONLY가 비어 있으면 false 적용입니다.
+앱은 .env를 자동으로 읽지 않습니다. 아래 실행 명령에 --env-file .env를 추가하거나 프로세스 환경 변수로 값을 전달해야 합니다. DATABASE_URL이 비어 있으면 DB 모듈은 로컬 ./chatbot.db를 사용합니다. 인증용 SECRET_KEY 검증 및 세션 설정은 서버 담당 연결 대상입니다.
 
 ### Backend
 
@@ -115,7 +114,7 @@ FastAPI는 시작 시 `frontend/dist`의 빌드 결과를 제공합니다.
 
 서비스 접속: [https://codyssey1-termproject-production.up.railway.app](https://codyssey1-termproject-production.up.railway.app)
 
-Railway Variables에 위 환경 변수 등록 및 /data 경로 Volume 마운트가 필요합니다. 현재 배포 시작 명령은 .env를 자동으로 읽지 않습니다. 직접 관리하는 서버에서 .env 파일을 사용할 때는 --env-file .env 옵션을 지정합니다. HTTPS 배포에서는 SESSION_HTTPS_ONLY=true로 설정합니다.
+Railway Variables에 위 환경 변수 등록 및 /data 경로 Volume 마운트가 필요합니다. 현재 배포 시작 명령은 .env를 자동으로 읽지 않습니다. 직접 관리하는 서버에서 .env 파일을 사용할 때는 --env-file .env 옵션을 지정합니다. HTTPS 쿠키 정책은 서버 담당의 인증 구현에서 설정합니다.
 
 로컬 파일 DB 재연결 검증과 실제 Railway 재배포 검증은 구분합니다. Volume 연결 및 재배포 후 데이터 보존 여부는 배포 담당 환경에서 추가 확인이 필요합니다.
 
