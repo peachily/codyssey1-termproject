@@ -436,6 +436,7 @@ Types:
 - refactor: 기능 변경 없는 코드 개선
 - test: 테스트 코드 추가 및 수정
 - chore: 환경 설정, 패키지 등 기타 작업
+- misc: 협업 규칙 등 기타 관리 작업
 
 규칙:
 
@@ -451,7 +452,7 @@ Types:
 ```text
 main
 └── develop
-    └── <type>/<github-id>-<작업명>
+    └── <type>/<issue_number>-<module>-<task_name>
 ```
 
 규칙:
@@ -464,7 +465,7 @@ main
 - main과 develop에 기능 코드를 직접 push하지 않습니다.
 - AI 코딩 도구도 사용자가 명시적으로 요청하지 않는 한 main/develop에 직접 commit 또는 push하지 않습니다.
 
-브랜치 이름 형식: `<type>/<github-id>-<작업명>`
+브랜치 이름 형식: `<type>/<issue_number>-<module>-<task_name>`
 
 Types:
 
@@ -472,19 +473,34 @@ Types:
 - fix: 버그 수정
 - chore: 환경 설정 및 기타 작업
 - docs: 문서 작업
+- misc: 협업 규칙 등 기타 관리 작업
 
 예시:
 
-- `feature/peachily-auth`
-- `fix/peachily-login`
-- `chore/peachily-railway`
-- `docs/peachily-readme`
+- `feature/12-auth-sign_up`
+- `fix/13-auth-login_error`
+- `chore/14-deploy-railway_setup`
+- `docs/15-db-verification_guide`
+- `misc/16-workflow-branch_naming`
 
 브랜치 이름 규칙:
 
-- 작업명은 짧은 영문 소문자로 작성합니다.
-- 작업자의 GitHub ID를 사용합니다.
-- GitHub ID가 명확하지 않으면 임의로 추측하지 말고 사용자에게 확인합니다.
+- `issue_number`는 먼저 생성한 실제 GitHub Issue 번호이며 `#`은 붙이지 않습니다. 위 번호는 형식 예시입니다.
+- `module`은 `db`, `auth`, `workflow`처럼 변경하는 모듈 또는 영역을 나타냅니다.
+- `module`과 `task_name`은 영문 소문자로 작성하고, 여러 단어는 underscore(`_`)로 구분합니다.
+- `task_name`은 작업 내용을 짧게 표현합니다. 예: `storage_and_history`.
+- type 뒤에는 `/`, issue_number·module·task_name 사이에는 `-`를 사용합니다.
+- 작업자 GitHub ID 대신 Issue 번호로 작업을 식별합니다.
+
+### Issue 및 작업 브랜치 연결
+
+- 작업 Issue를 먼저 생성하고 목적, 과제 대응 항목, 작업 범위, 완료 조건 및 의존성을 기록합니다. 큰 작업은 상위 Issue와 하위 Task로 나눕니다.
+- Issue의 Development → Create a branch에서 위 이름을 입력하고 최신 `develop`을 기준으로 브랜치를 생성합니다. 기본 기준 브랜치인 `main`을 그대로 사용하지 않습니다.
+- 생성된 원격 브랜치를 fetch한 뒤 작업별 별도 Git worktree에서 작업합니다.
+- 브랜치 이름에 Issue 번호를 넣는 것만으로 GitHub Issue가 자동 연결되지는 않습니다. Development의 연결 상태를 확인합니다.
+- PR 본문에 관련 Issue를 명시하고 Development에서 연결을 확인합니다.
+- `develop` 대상 PR의 `Closes #번호`는 GitHub 자동 연결·종료를 수행하지 않습니다. 완료 조건 충족 여부를 확인하여 Issue 상태를 관리하고, 기본 브랜치 `main` 반영 시 자동 종료할 경우 해당 PR에 종료 키워드를 사용합니다.
+- Issue 관리는 팀의 작업 추적 방식이며, 과제 원문에서 요구하는 브랜치·PR 이력과 개인별 유의미한 커밋 요건을 대체하지 않습니다.
 
 ### Pull Request Convention
 
@@ -503,7 +519,7 @@ PR 본문은 `.github/pull_request_template.md` 형식을 따릅니다.
 
 PR 생성 규칙:
 
-- feature, fix, chore, docs 브랜치에서 작업한 내용은 Pull Request를 통해 병합합니다.
+- feature, fix, chore, docs, misc 브랜치에서 작업한 내용은 Pull Request를 통해 병합합니다.
 - 기능 개발 브랜치는 기본적으로 develop을 base branch로 사용합니다.
 - main에는 직접 기능 PR을 생성하지 않습니다.
 - main 반영은 develop → main Pull Request를 통해 진행합니다.
