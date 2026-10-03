@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -6,6 +7,8 @@ from starlette.exceptions import HTTPException
 from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 from starlette.types import Scope
+
+from app import database, models
 
 
 class FrontendFiles(StaticFiles):
@@ -30,7 +33,16 @@ class FrontendFiles(StaticFiles):
             raise
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    database.initialize_database(database.engine)
+    try:
+        yield
+    finally:
+        database.engine.dispose()
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/health")
