@@ -106,6 +106,20 @@ def parse_prescription(content: str) -> dict[str, str]:
     return {"keyword": keyword, "color": PRESCRIPTION_COLORS[keyword], "message": message}
 
 
+def request_prescription(
+    messages: list[dict[str, str]],
+    *,
+    user_id: int | None = None,
+    request_id: str | None = None,
+) -> dict[str, str]:
+    content = request_chat_completion(messages, user_id=user_id, request_id=request_id)
+    try:
+        return parse_prescription(content)
+    except AICallError as error:
+        logger.error("ai_call_failure user_id=%s request_id=%s reason=%s", user_id, request_id, error)
+        raise
+
+
 def request_chat_completion(
     messages: list[dict[str, str]],
     *,
