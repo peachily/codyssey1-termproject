@@ -70,7 +70,7 @@
 ### AI 및 Context
 
 - Codyssey 제공 OpenAI 호환 Chat Completions API를 Python `requests`로 호출합니다.
-- 요청 URL은 `AI_API_URL`로 설정하며 기본값은 `https://copa.codyssey.kr/v1/chat/completions`입니다. 모델은 `AI_MODEL`로 설정하며 기본값은 `gpt-5-mini`입니다.
+- 요청 URL은 `AI_API_URL`로 설정하며 기본값은 `https://copa.codyssey.kr/v1/chat/completions`입니다. 모델은 `AI_MODEL`로 설정하며 기본값은 `gpt-5.4`입니다.
 - `CODYSSEY_API_KEY`에서 virtual key를 읽어 `Authorization: Bearer <virtual-key>` 헤더로 전달합니다. 실제 키는 로컬 `.env` 또는 Railway Variables에만 설정하며 코드·문서·로그에 남기지 않습니다.
 - POST 요청의 JSON에는 `model`과 `messages`를 전달하고, 응답의 `choices[0].message.content`를 AI 답변으로 사용합니다.
 - 최근 Q/A는 `user`·`assistant` 메시지로 순서대로 구성하고 마지막에 현재 질문을 `user` 메시지로 추가합니다.
@@ -506,7 +506,7 @@ SECRET_KEY=
 DATABASE_URL=
 CODYSSEY_API_KEY=
 AI_API_URL=https://copa.codyssey.kr/v1/chat/completions
-AI_MODEL=gpt-5-mini
+AI_MODEL=gpt-5.4
 AI_TIMEOUT=30
 ```
 

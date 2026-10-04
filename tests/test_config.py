@@ -15,7 +15,7 @@ class AISettingsTests(unittest.TestCase):
         settings = self.read()
         self.assertEqual(settings.api_key, "")
         self.assertEqual(settings.api_url, "https://copa.codyssey.kr/v1/chat/completions")
-        self.assertEqual(settings.model, "gpt-5-mini")
+        self.assertEqual(settings.model, "gpt-5.4")
         self.assertEqual(settings.timeout, 30.0)
 
     def test_blank_environment_uses_defaults(self):
