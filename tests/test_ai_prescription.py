@@ -80,17 +80,38 @@ class PrescriptionRequestTests(unittest.TestCase):
         self.assertEqual(result["color"], "GREEN")
         completion.assert_called_once_with(self.MESSAGES, user_id=12, request_id="abc123")
 
-    def test_invalid_output_logs_failure_without_content(self):
-        with patch.object(ai, "request_chat_completion", return_value="private answer"):
+    def test_invalid_output_is_requested_once_more(self):
+        with patch.object(ai, "request_chat_completion", side_effect=[output("ANGER"), output("STRESS")]) as completion:
+            with self.assertLogs("app.services.ai", level="ERROR") as logs:
+                result = ai.request_prescription(self.MESSAGES, user_id=12, request_id="abc123")
+        self.assertEqual(result["keyword"], "STRESS")
+        self.assertEqual(completion.call_count, 2)
+        self.assertIn("reason=invalid_prescription attempt=1", logs.output[0])
+
+    def test_invalid_output_twice_fails_and_logs_without_content(self):
+        with patch.object(ai, "request_chat_completion", return_value="private answer") as completion:
             with self.assertLogs("app.services.ai", level="ERROR") as logs:
                 with self.assertRaises(ai.AICallError):
                     ai.request_prescription(self.MESSAGES, user_id=12, request_id="abc123")
-        self.assertIn("ai_call_failure user_id=12 request_id=abc123 reason=invalid_prescription", logs.output[0])
+        self.assertEqual(completion.call_count, 2)
+        self.assertEqual(len(logs.output), 2)
+        self.assertIn("ai_call_failure user_id=12 request_id=abc123 reason=invalid_prescription attempt=2", logs.output[1])
         self.assertNotIn("private", "\n".join(logs.output))
 
     def test_call_errors_pass_through(self):
         for error in (ai.AITimeoutError("timeout"), ai.AICallError("http_status_500")):
             with self.subTest(error=str(error)):
-                with patch.object(ai, "request_chat_completion", side_effect=error):
+                with patch.object(ai, "request_chat_completion", side_effect=error) as completion:
                     with self.assertRaises(type(error)):
                         ai.request_prescription(self.MESSAGES)
+                self.assertEqual(completion.call_count, 1)
+
+
+class PrescriptionMessageTidyTests(unittest.TestCase):
+    def test_missing_space_after_sentence_is_restored(self):
+        result = ai.parse_prescription(output(message="많이 애쓰셨어요.오늘은 쉬어도 돼요."))
+        self.assertEqual(result["message"], "많이 애쓰셨어요. 오늘은 쉬어도 돼요.")
+
+    def test_numbers_and_final_punctuation_are_untouched(self):
+        result = ai.parse_prescription(output(message="자살예방상담전화 109에 연락해 주세요."))
+        self.assertEqual(result["message"], "자살예방상담전화 109에 연락해 주세요.")

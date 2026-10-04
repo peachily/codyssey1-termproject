@@ -81,12 +81,20 @@ class ChatRouterTests(RouterTestCase):
             saved = db.get(Chat, body["id"])
             self.assertEqual((saved.user_id, saved.question, saved.answer), (1, "hello", "AI answer"))
 
+    def test_answer_line_breaks_are_folded_into_one_paragraph(self):
+        self.ai.return_value = "첫 문장입니다.\n\n둘째 문장인가요?  \n"
+        body = self.post(json={"message": "hello"}).json()
+        self.assertEqual(body["answer"], "첫 문장입니다. 둘째 문장인가요?")
+        with Session(self.engine) as db:
+            self.assertEqual(db.get(Chat, body["id"]).answer, body["answer"])
+
     def test_ai_receives_own_recent_chats_and_trace_user(self):
         self.seed(6)
         self.seed(3, user_id=2)
         self.post(json={"message": "now"})
         messages = self.ai.call_args.args[0]
-        self.assertEqual(messages[0], {"role": "system", "content": SYSTEM_PROMPT})
+        self.assertEqual(messages[0]["role"], "system")
+        self.assertTrue(messages[0]["content"].startswith(SYSTEM_PROMPT))
         self.assertEqual(
             [message["content"] for message in messages[1:]],
             [text for number in range(1, 6) for text in (f"Q{number}", f"A{number}")] + ["now"],
