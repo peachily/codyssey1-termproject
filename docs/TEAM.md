@@ -4,34 +4,32 @@
 
 | 팀원 | 담당 영역 | 주요 작업 |
 | --- | --- | --- |
-| <!-- TODO --> | 인증 · 사용자 관리 | <!-- TODO --> |
-| TraceofLight | DB · 대화 기록 | SQLite 연결, 사용자·대화 모델, 대화 저장·조회, 기록 조회 연동 안내, DB 문서 및 검증 |
-| <!-- TODO --> | AI 챗봇 | <!-- TODO --> |
-| <!-- TODO --> | Web UI · API 연결 | <!-- TODO --> |
+| 장정명 ([jungmyung16](https://github.com/jungmyung16)) | 로그인 · 사용자 인증 | <!-- TODO: 실제 작업 내역 --> |
+| 김희준 ([TraceofLight](https://github.com/TraceofLight)) | DB · 대화 기록 | SQLite 연결, 사용자·대화 모델, 대화 저장·조회, 기록 조회 연동 안내, DB 문서 및 검증 |
+| 정빈 ([b0e2](https://github.com/b0e2)) | AI 챗봇 | <!-- TODO: 실제 작업 내역 --> |
+| 김수정 ([peachily](https://github.com/peachily)) | UI · API 연결 | <!-- TODO: 실제 작업 내역 --> |
 
 ## 개인별 작업 내역
 
-### TraceofLight
+### 김희준 ([TraceofLight](https://github.com/TraceofLight))
 
-| 이슈 | 작업 내역 | 상태 |
-| --- | --- | --- |
-| #9 | 이슈 번호 기반 브랜치 명명 및 협업 규칙 정리 | PR #15 작성, develop 미병합 |
-| #10 | SQLite 엔진, 요청별 세션 종료, 외래키 설정, 멱등 초기화 및 테스트 추가 | 개별 작업 브랜치 구현, develop 미병합 |
-| #11 | User·Chat 모델, UTC 시각, 외래키·유일 제약 및 복합 인덱스 검증 | 개별 작업 브랜치 구현, develop 미병합 |
-| #12 | 대화 저장·rollback·로그, 사용자별 기록 및 최근 5개 문맥 조회 검증 | 개별 작업 브랜치 구현, develop 미병합 |
-| #13 | 본인 기록 조회와 세션 인증·초기화 연결을 위한 서버 담당 가이드 제공 | 연동 문서 작성, develop 미병합 |
-| #14 | DB 구조·인덱스·N+1·담당자 연동 문서, 읽기 전용 확인 도구 및 테스트 추가 | 개별 작업 브랜치 구현, develop 미병합 |
+| 관련 Issue | 주요 작업 |
+| --- | --- |
+| #9 | Issue 기반 브랜치 명명 및 협업 규칙 정리 |
+| #10 | SQLite 엔진, 요청별 세션, 외래키 설정, 초기화 및 테스트 |
+| #11 | User·Chat 모델, UTC 시각, 외래키·유일 제약 및 복합 인덱스 검증 |
+| #12 | 대화 저장·rollback·로그, 사용자별 기록 및 최근 5개 문맥 조회 |
+| #13 | 세션 인증·DB 초기화·기록 조회 연결 계약 문서화 |
+| #14 | DB 문서, 읽기 전용 확인 도구 및 테스트 |
 
-2026-10-04 기준 작업 기록. 후속 브랜치는 선행 DB 구현을 포함하여 검증하며 실제 develop 병합 또는 Railway 배포 완료를 의미하지 않음. 인증·AI 호출 라우터의 최종 통합 및 Railway 재배포 영속성 확인은 담당자 협업 필요.
-
-### <!-- TODO: 팀원 이름 -->
+### 정빈 ([b0e2](https://github.com/b0e2))
 
 <!-- TODO: 실제 작업 내역 -->
 
-### <!-- TODO: 팀원 이름 -->
+### 장정명 ([jungmyung16](https://github.com/jungmyung16))
 
 <!-- TODO: 실제 작업 내역 -->
 
-### <!-- TODO: 팀원 이름 -->
+### 김수정 ([peachily](https://github.com/peachily))
 
 <!-- TODO: 실제 작업 내역 -->

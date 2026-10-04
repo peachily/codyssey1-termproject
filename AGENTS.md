@@ -12,6 +12,25 @@
 - `GET /health`는 유지합니다.
 - 명시적 요청 없이 commit, push, 브랜치 설정 또는 원격 저장소 설정 변경을 하지 않습니다.
 
+## 서비스 및 마법약 처방 계약
+
+- **KKAMURUK(까무룩)**은 잠들기 어려운 사용자가 AI와 짧게 대화하고, 대화 내용을 바탕으로 마법약 처방과 짧은 위로 메시지를 받는 웹 서비스입니다.
+- 기본 흐름: 회원가입/로그인 → AI와 대화 → 상태 분류 → 마법약 처방 → 짧은 위로 메시지 확인.
+- 일반 대화 Q/A는 기존 사용자별 저장·조회 및 최근 최대 5개 Q/A 문맥 계약을 유지합니다. `GET /api/me/chats`와 DB 함수는 유지하며, 별도의 과거 대화 기록 화면은 현재 필수 기능이 아닙니다.
+- AI는 대화 내용을 바탕으로 아래 `keyword` 중 하나와 짧은 위로 `message`를 생성합니다. 서버는 `keyword`를 검증하고 `color`를 고정 매핑하며, AI가 임의로 생성한 색상을 사용하지 않습니다.
+
+| keyword | color |
+| --- | --- |
+| ANXIETY | BLUE |
+| SADNESS | PURPLE |
+| LONELINESS | PINK |
+| STRESS | GREEN |
+| EXHAUSTION | YELLOW |
+
+- 최종 처방 데이터는 `keyword`, `color`, `message`입니다. `keyword`와 `color`는 내부 분류값이며 사용자 화면에 문자열로 표시할 의무는 없습니다. 프론트엔드는 `color`를 마법약의 시각적 표현에 사용할 수 있습니다.
+- 일반 대화 Q/A 저장과 최종 처방은 구분합니다. 최종 처방은 DB에 저장하지 않으며 이전 처방 조회 기능을 제공하지 않습니다.
+- 처방 endpoint 경로와 최종 request/response 형식은 미확정입니다. 임의로 확정하거나 구현하지 않습니다.
+
 ## 고정 기술 스택
 
 ### Frontend
@@ -108,7 +127,7 @@ Python `logging`을 사용하며 다음 이벤트를 최소한 기록합니다.
 
 ## API Convention
 
-개발 중 API 계약은 이 문서를 기준으로 합니다. 계약 변경은 관련 담당자와 합의합니다. README와 docs/는 제출용 문서이며 개발 계약의 기준으로 사용하지 않습니다.
+개발 중 API 계약은 이 문서를 기준으로 합니다. 계약 변경은 관련 담당자와 합의합니다. 문서 작성 위치와 기준은 아래 「문서 역할 및 작성 규칙」을 따릅니다.
 
 ### 공통 규칙 및 라우터 등록
 
@@ -385,11 +404,68 @@ frontend/
 | 인증 · 사용자 관리 | `/api/auth/*`, 인증·세션, 접근 제어 | `app/routers/auth.py`, `app/services/auth.py` |
 | DB · 대화 기록 | DB 연결, User/Chat 모델, 대화 저장·조회 | `app/database.py`, `app/models.py`, `app/routers/history.py` |
 | AI 챗봇 | Codyssey API 호출, `/api/chat` AI 처리, 최근 5개 문맥, Timeout·오류 처리 | `app/services/ai.py`, `app/routers/chat.py` |
-| 웹 UI · API 연결 | 회원가입·로그인 화면, 챗봇 화면, 대화 기록 화면, FastAPI API와 React 연결 | `frontend/` |
+| 웹 UI · API 연결 | 회원가입·로그인 화면, 챗봇·마법약 처방 결과 화면, FastAPI API와 React 연결 | `frontend/` |
 
 - 각 담당자는 자기 영역의 입력 검증, 예외 처리, 필요한 로그까지 함께 구현합니다.
 - Frontend 담당자는 위 API 계약을 그대로 사용하며 backend API의 요청/응답 형식을 임의로 변경하지 않습니다.
 - 공통 파일과 역할 간 인터페이스는 관련 담당자와 조율하고, 다른 담당자의 코드를 임의로 크게 수정하지 않습니다.
+
+## DB 및 담당 영역 간 연동
+
+- 현재 `app/main.py`는 `/health`와 React 정적 파일 제공을 담당합니다. DB 초기화, 인증·대화 라우터, AI 호출 및 서비스 UI 연결은 각 담당자의 구현 범위입니다.
+- `app.database.get_db`를 FastAPI `Depends`로 사용해 요청별 Session을 전달합니다. 직접 세션이 필요한 서버 코드는 `SessionLocal`을 사용합니다.
+- 서버 담당은 lifespan 시작 시 `app.models`를 import한 뒤 `initialize_database(engine)`을 호출하고 종료 시 `engine.dispose()`를 호출합니다. `create_all`은 기존 스키마를 변경하지 않으므로 스키마 변경 시 백업·마이그레이션 절차를 별도로 마련합니다.
+- `User.password_hash`에는 인증 담당이 생성한 Argon2 해시만 넣습니다. DB UNIQUE 오류는 rollback 후 HTTP 409로 처리합니다.
+- 인증 의존성은 재사용하며 세션의 `user_id`가 문자열 또는 bool이면 인증 실패로 처리하도록 검증하는 것을 권장합니다. SECRET_KEY 검증과 HTTPS 쿠키 정책은 인증 담당이 연결합니다.
+
+### 대화 저장·조회 인터페이스
+
+| 함수 | 동작 |
+| --- | --- |
+| `save_chat(db, user_id, question, answer)` | flush → commit → 성공 로그 → Chat 반환 |
+| `list_user_chats(db, user_id)` | 본인 전체 대화 최신순 조회 |
+| `get_recent_chats(db, user_id)` | 본인 최근 최대 5개 Q/A를 오래된 순으로 반환 |
+
+- 세 함수의 `user_id`는 인증된 `user.id`를 사용합니다. 조회 정렬은 `created_at DESC, id DESC`이며 최근 문맥만 역순으로 반환합니다.
+- 기록이 없으면 `GET /api/me/chats`의 `chats`는 빈 배열입니다. UTC 응답 시각에는 소수 초가 포함될 수 있습니다. 401의 구체적인 문구는 기존 API 계약 이상으로 확정하지 않습니다.
+- AI 담당은 최근 Q/A를 일반 메시지 데이터로 변환한 후, 미저장 변경이 없는 전용 요청 세션에서 `db.rollback()`으로 읽기 트랜잭션을 종료하고 AI를 호출합니다. 무관한 미저장 변경을 같은 세션에 넣지 않습니다.
+- AI 호출 중 쓰기 트랜잭션을 열거나 빈 Chat을 미리 삽입하지 않습니다. 성공한 일반 대화 답변만 `save_chat`에 전달하며 실패·timeout 시 호출하지 않습니다.
+- `save_chat`은 전달된 세션 전체를 commit합니다. SQLAlchemy 저장 오류 시 rollback·실패 로그 후 `ChatSaveError`를 발생시키므로 서버 담당은 기존 계약의 HTTP 500 및 `Failed to save chat` 응답으로 변환합니다.
+- `SessionLocal`은 `expire_on_commit=False`입니다. 로그에는 추적 ID만 사용하고 질문·응답·내부 DB 오류 원문을 추가하지 않습니다.
+- SQLite 연결의 foreign_keys와 5초 busy_timeout, 사용자별 복합 인덱스를 유지합니다. 사용자 삭제에 cascade를 임의로 추가하지 않습니다.
+- UTCDateTime은 시간대 없는 입력을 거부합니다. 직접 SQL로 삽입할 때에는 ORM 기본값이 적용되지 않으므로 생성 시각을 명시합니다.
+- 현재 조회는 관계의 지연 로딩 없이 명시적 SELECT를 사용합니다. 필요하지 않은 relationship, 중복 인덱스, covering index, WAL 또는 별도 DB 서버를 임의로 추가하지 않습니다.
+
+### 처방 연동 경계
+
+- AI 담당은 공통 처방 계약의 keyword와 짧은 message를 생성하고, 서버는 keyword 검증과 고정 color 매핑을 수행합니다.
+- 프론트엔드는 최종 처방을 표시합니다. 처방을 `Chat.answer`에 우회 저장하거나 users·chats에 처방 컬럼을 추가하지 않습니다.
+- 처방 endpoint·최종 request/response·message의 구체적인 검증 규칙은 관련 담당자와 합의합니다.
+
+### 로컬 개발 및 통합 검증
+
+가상환경 생성·활성화:
+
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Windows PowerShell:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+- `.env.example`을 `.env`로 복사하고 서버 설정값을 입력합니다. 실제 키나 비밀값은 예시 파일에 넣지 않습니다.
+- React 빌드 결과는 FastAPI 시작 시 감지하므로 빌드 후 서버를 재시작합니다.
+
+- 공통 설치·배포 실행 명령은 `docs/DEPLOYMENT.md`를 사용합니다. 로컬 개발 시 backend 명령에 `--reload`를 추가하고, 별도 터미널에서 `cd frontend`, `npm ci`, `npm run dev`를 실행합니다. Vite 주소는 `http://127.0.0.1:5173`입니다.
+- DB 모듈은 DATABASE_URL이 비어 있으면 `sqlite:///./chatbot.db`를 사용합니다. `.env`는 자동 로딩되지 않으므로 Uvicorn의 `--env-file .env` 또는 프로세스 환경 변수로 전달합니다.
+- DB 회귀 검증은 `python -m unittest discover -s tests -v`로 수행합니다. 기존 23개 테스트는 DB 기반 검증이며 인증·AI HTTP 통합 및 Railway 재배포 검증을 대신하지 않습니다.
+- 담당자 연동 후 인증·AI·DB 저장 실패 시나리오를 함께 검증합니다. Railway Volume 연결·쓰기 권한·재배포 후 데이터 보존과 외부 서비스 접근은 실제 배포 환경에서 확인합니다.
+- DB 증빙에는 테스트 계정 데이터를 사용합니다. 로그인 없이 사용할 수 있는 테스트용 로그인 API를 만들지 않습니다.
 
 ## Environment Variables
 
@@ -528,9 +604,25 @@ PR 생성 규칙:
 - GitHub CLI를 사용할 수 있는 경우 `gh pr create`를 사용합니다.
 - 사용자가 명시적으로 요청하지 않은 PR merge는 수행하지 않습니다.
 
+### PR Reviewer
+
+모든 작업 PR과 `develop → main` 통합 PR은 생성 시 작성자에 따라 GitHub Reviewer를 실제 지정합니다.
+
+| PR 작성자 | Reviewer |
+| --- | --- |
+| peachily | b0e2 |
+| b0e2 | peachily |
+| jungmyung16 | peachily |
+| TraceofLight | peachily |
+
+- 작성자는 자신의 PR Reviewer가 될 수 없습니다.
+- Codex도 PR 생성을 요청받으면 본문에 이름만 쓰지 않고 GitHub의 Reviewer에 지정합니다. GitHub CLI에서는 `--reviewer`를 사용합니다.
+- 권한이나 환경 문제로 지정할 수 없으면 임의의 다른 Reviewer를 선택하지 않고 사용자에게 알립니다.
+
 ### Merge Policy
 
 - 작업 브랜치 → PR → develop, develop → PR → main 흐름을 따릅니다.
+- 지정된 Reviewer의 Approve를 받은 후 merge합니다.
 - PR은 Merge commit 방식으로 병합합니다. Squash merge 또는 Rebase merge로 대체하지 않습니다.
 - AI 코딩 도구는 사용자의 명시적 요청 없이 PR을 merge하지 않습니다.
 
@@ -552,11 +644,32 @@ PR 생성 규칙:
 - 팀원별 유의미한 커밋을 10회 이상 남깁니다.
 - 기능 단위 브랜치 작업 기록과 PR 기반 Merge 기록을 남깁니다.
 
-## 제출 문서
+## 문서 역할 및 작성 규칙
 
-- README: 문제 정의, 타겟 사용자, 핵심 시나리오, 주요 기능, 시스템 구조·구성요소, 실행·배포 방법, 환경 변수 키와 설정 방법, 외부 접속 가능한 서비스 URL
+문서는 아래 역할에 맞게 수정합니다. README와 docs/는 이용자·평가자가 읽는 서비스 소개 및 제출 자료이고, AGENTS.md는 팀원과 AI 코딩 도구가 따르는 내부 개발 기준입니다.
+
+### 문서별 역할
+
+- `AGENTS.md`: 확정된 개발 계약, 입력 검증·인증·오류 처리 규칙, 담당 영역 간 연동 방법, 로컬 개발·테스트 절차, Git·Issue·PR·Reviewer 규칙
+- README: 이용자 관점의 서비스 소개, 문제·대상 사용자, 사용 흐름, 주요 경험, 외부 접속 URL 및 상세 문서 링크
+- `docs/ARCHITECTURE.md`: 기술 스택, 아키텍처, 주요 구성요소와 처리 흐름
+- `docs/DEPLOYMENT.md`: 환경 변수 키·설정 방법, 실행·배포 방법, 민감정보 관리
 - `docs/API.md`: API 명세와 요청·응답 예시
 - `docs/DATABASE.md`: ERD 또는 테이블·필드 설명, DB 확인 방법(SQL·API·화면·스크립트·증빙 중 1개 이상)
 - `docs/TEAM.md`: 역할 분담과 개인별 작업 요약. 실제 Git 이력과 일치해야 합니다.
-- GitHub Repository 링크, `.env.example`, `.gitignore`를 포함합니다. `.env`와 비밀값은 제외합니다.
+
+### 작성 기준
+
+- README에는 기술 스택 표, 아키텍처·ERD, 환경 변수, 설치 명령, 로컬 접속 방법, 개발 진행 상태 또는 팀 내부 작업 지시를 넣지 않습니다. 필요한 상세 내용은 해당 docs/ 문서로 연결합니다.
+- docs/에는 과제 요구사항과 최종 결과를 설명·검증하는 데 필요한 내용을 기록합니다. 개발자가 지켜야 할 약속이나 담당자에게 연결·수정을 지시하는 내용은 AGENTS.md에 둡니다. 별도의 내부 연동 안내 문서를 docs/에 만들지 않습니다.
+- 제출용 API 명세는 실제 구현을 기준으로 작성합니다. 구현 전의 확정 계약은 AGENTS.md에서 관리하며, 제출 문서에 구현 완료 사실처럼 옮기지 않습니다.
+- 미확정·미검증 내용은 짧은 HTML TODO 주석으로 남깁니다. 미구현 기능을 완료된 것으로 쓰거나, 제출 문서에 긴 진행 상황·주의 문구를 덧붙이지 않습니다.
+- 같은 설명은 한 문서에 두고 다른 문서에서는 링크로 참조합니다. 내용 이동 시 제출 필수 항목을 누락하지 않고 기존 링크와 이미지 경로도 갱신합니다.
+- 기술적 설계·구현 결과 설명과 내부 개발 규칙을 구분합니다. 예를 들어 테이블·조회 방식은 DATABASE, 실행 재현·환경 설정은 DEPLOYMENT, 트랜잭션 사용 주의사항·담당자 연동 절차는 AGENTS에 둡니다.
+- 서비스 화면·다이어그램·개인별 작업 내역은 실제 결과와 일치시킵니다. 미확정 API 경로, 팀원 작업 실적 또는 배포 검증 결과를 임의로 작성하지 않습니다.
+- 문서 개수는 고정 요건이 아닙니다. 새 문서는 기존 문서로 담기 어려운 제출 항목이 있을 때만 추가하며, 내부 규칙은 AGENTS.md로 모읍니다.
+
+### 제출 확인
+
+- GitHub Repository 링크, `.env.example`, `.gitignore`를 제출 자료에 포함합니다. README에 자기 저장소 링크를 중복 표시할 필요는 없습니다. `.env`와 비밀값은 제외합니다.
 - 제출 전 외부 네트워크에서 서비스 접속과 주요 기능을 확인합니다.
