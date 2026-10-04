@@ -115,3 +115,7 @@ class PrescriptionMessageTidyTests(unittest.TestCase):
     def test_numbers_and_final_punctuation_are_untouched(self):
         result = ai.parse_prescription(output(message="자살예방상담전화 109에 연락해 주세요."))
         self.assertEqual(result["message"], "자살예방상담전화 109에 연락해 주세요.")
+
+    def test_doubled_polite_ending_is_reduced(self):
+        result = ai.parse_prescription(output(message="오래 버텨오셨네요요. 이제는 쉬어도 괜찮아요요"))
+        self.assertEqual(result["message"], "오래 버텨오셨네요. 이제는 쉬어도 괜찮아요")

@@ -61,7 +61,9 @@ PRESCRIPTION_PROMPT = """당신은 잠들지 못하는 밤에만 문을 여는 �
 keyword는 반드시 위 다섯 낱말 중 하나를 철자 그대로 씁니다. 다른 낱말을 새로 만들지 않습니다. 화남과 억울함은 STRESS, 잃어버린 것에 대한 마음은 SADNESS로 고릅니다.
 
 2. 위로 한마디(message)를 씁니다.
-- 대화 내용에 맞춘 한두 문장으로, "~요"로 끝나는 따뜻한 존댓말로 씁니다.
+- 두 문장으로, "~요"로 끝나는 따뜻한 존댓말로 씁니다.
+- 첫 문장은 대화 내용에 맞춰 손님이 지나온 마음을 알아주는 말입니다.
+- 둘째 문장은 손님에게 직접 건네는 마무리 인사입니다. 오늘 하루 고생했다고, 수고했다고 말해 주거나, 괜찮다고 다독이거나, 이제 쉬어도 된다고 말해 주는 것 가운데 대화에 가장 어울리는 말을 고릅니다.
 - 질문, 조언, 해결책을 넣지 않습니다.
 - keyword, 상태 이름, 색, 약의 종류나 효과, 실제 약을 말하지 않습니다.
 - 이모지와 줄바꿈을 쓰지 않습니다.
@@ -137,8 +139,9 @@ def parse_prescription(content: str) -> dict[str, str]:
     if not isinstance(keyword, str) or not isinstance(message, str):
         raise AICallError("invalid_prescription")
     keyword = keyword.strip().upper()
-    # Fold line breaks and restore a missing space after sentence punctuation.
+    # Fold line breaks, restore a missing space after sentence punctuation and drop a doubled ending.
     message = " ".join(re.sub(r"([.!?])(?=[가-힣])", r"\1 ", message).split())
+    message = re.sub(r"요요(?=[.,!?]|$)", "요", message)
     if keyword not in PRESCRIPTION_COLORS or not message:
         raise AICallError("invalid_prescription")
     return {"keyword": keyword, "color": PRESCRIPTION_COLORS[keyword], "message": message}
