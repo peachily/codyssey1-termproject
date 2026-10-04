@@ -62,6 +62,8 @@ def create_chat(
         raise HTTPException(status_code=504, detail="AI response timed out") from None
     except AICallError:
         raise HTTPException(status_code=502, detail="AI request failed") from None
+    # The chat bubble shows one paragraph; line breaks from the model are folded into spaces.
+    answer = " ".join(answer.split())
     try:
         return save_chat(db, user.id, payload.message, answer)
     except ChatSaveError:
