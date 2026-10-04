@@ -1,9 +1,11 @@
 import logging
 import time
+from collections.abc import Sequence
 
 import requests
 
 from app.config import AISettings, get_ai_settings
+from app.models import Chat
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +35,16 @@ class AICallError(Exception):
 
 class AITimeoutError(AICallError):
     """The AI API did not respond within the configured timeout."""
+
+
+def build_chat_messages(recent_chats: Sequence[Chat], question: str) -> list[dict[str, str]]:
+    """Build the system prompt, the oldest-first recent Q/A and the current question."""
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for chat in recent_chats:
+        messages.append({"role": "user", "content": chat.question})
+        messages.append({"role": "assistant", "content": chat.answer})
+    messages.append({"role": "user", "content": question})
+    return messages
 
 
 def request_chat_completion(
