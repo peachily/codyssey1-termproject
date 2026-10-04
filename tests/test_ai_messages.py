@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.database import build_engine, initialize_database
 from app.models import Chat, User
-from app.services.ai import SHARED_ENOUGH_LENGTH, SYSTEM_PROMPT, build_chat_messages, conversation_stage
+from app.services.ai import SHARED_ENOUGH_LENGTH, build_chat_messages, conversation_stage
+from app.services.prompts import SYSTEM_PROMPT
 from app.services.chats import get_recent_chats
 
 

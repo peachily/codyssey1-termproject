@@ -13,7 +13,8 @@ from app.database import build_engine, get_db, initialize_database
 from app.models import Chat, User
 from app.routers import chat as chat_router
 from app.services import ai as ai_service
-from app.services.ai import SYSTEM_PROMPT, AICallError, AITimeoutError
+from app.services.ai import AICallError, AITimeoutError
+from app.services.prompts import SYSTEM_PROMPT
 from app.services.chats import ChatSaveError
 
 

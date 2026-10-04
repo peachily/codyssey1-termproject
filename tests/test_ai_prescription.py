@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from app.services import ai
+from app.services.prompts import PRESCRIPTION_PROMPT
 
 
 def output(keyword="ANXIETY", message="오늘은 여기까지만 해도 괜찮아요.", **extra):
@@ -14,13 +15,13 @@ class PrescriptionMessageTests(unittest.TestCase):
     def test_conversation_is_sent_as_one_transcript_in_order(self):
         chats = [SimpleNamespace(question=f"Q{number}", answer=f"A{number}") for number in range(2)]
         messages = ai.build_prescription_messages(chats)
-        self.assertEqual(messages[0], {"role": "system", "content": ai.PRESCRIPTION_PROMPT})
+        self.assertEqual(messages[0], {"role": "system", "content": PRESCRIPTION_PROMPT})
         self.assertEqual([message["role"] for message in messages], ["system", "user"])
         self.assertTrue(messages[1]["content"].endswith("손님: Q0\n주인: A0\n손님: Q1\n주인: A1"))
 
     def test_prompt_lists_every_keyword_and_keeps_safety_rules(self):
         for phrase in (*ai.PRESCRIPTION_COLORS, "자살예방상담전화 109", "실제 약", "JSON"):
-            self.assertIn(phrase, ai.PRESCRIPTION_PROMPT)
+            self.assertIn(phrase, PRESCRIPTION_PROMPT)
 
 
 class PrescriptionParsingTests(unittest.TestCase):
