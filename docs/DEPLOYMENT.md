@@ -8,7 +8,7 @@
 | `DATABASE_URL` | 로컬 `sqlite:///./chatbot.db`, Railway `sqlite:////data/chatbot.db` |
 | `CODYSSEY_API_KEY` | Codyssey 인증용 virtual key |
 | `AI_API_URL` | `https://copa.codyssey.kr/v1/chat/completions` |
-| `AI_MODEL` | `gpt-5-mini` |
+| `AI_MODEL` | `gpt-5.4` |
 | `AI_TIMEOUT` | `30`초 |
 
 배포 시 Railway Variables에 설정합니다. 로컬에서는 환경 변수 또는 Git에서 제외되는 `.env`로 관리합니다. 비밀값은 저장소에 포함하지 않습니다.

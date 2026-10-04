@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 logger = logging.getLogger(__name__)
 
 DEFAULT_AI_API_URL = "https://copa.codyssey.kr/v1/chat/completions"
-DEFAULT_AI_MODEL = "gpt-5-mini"
+DEFAULT_AI_MODEL = "gpt-5.4"
 DEFAULT_AI_TIMEOUT = 30.0
 
 
