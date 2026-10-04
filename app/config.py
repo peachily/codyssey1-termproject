@@ -45,3 +45,9 @@ def get_ai_settings() -> AISettings:
         timeout=_read_timeout(),
     )
 
+
+def configure_logging() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
