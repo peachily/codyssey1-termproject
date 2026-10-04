@@ -7,8 +7,15 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import User
-from app.schemas.chat import ChatRequest, ChatResponse
-from app.services.ai import AICallError, AITimeoutError, build_chat_messages, request_chat_completion
+from app.schemas.chat import ChatRequest, ChatResponse, PrescriptionResponse
+from app.services.ai import (
+    AICallError,
+    AITimeoutError,
+    build_chat_messages,
+    build_prescription_messages,
+    request_chat_completion,
+    request_prescription,
+)
 from app.services.chats import ChatSaveError, get_recent_chats, save_chat
 
 
@@ -55,7 +62,32 @@ def create_chat(
         raise HTTPException(status_code=504, detail="AI response timed out") from None
     except AICallError:
         raise HTTPException(status_code=502, detail="AI request failed") from None
+    # The chat bubble shows one paragraph; line breaks from the model are folded into spaces.
+    answer = " ".join(answer.split())
     try:
         return save_chat(db, user.id, payload.message, answer)
     except ChatSaveError:
         raise HTTPException(status_code=500, detail="Failed to save chat") from None
+
+
+@router.post("/prescription", response_model=PrescriptionResponse)
+def create_prescription(
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    recent_chats = get_recent_chats(db, user.id)
+    messages = build_prescription_messages(recent_chats)
+    db.rollback()
+    if not recent_chats:
+        raise HTTPException(status_code=400, detail="No chats to prescribe")
+    try:
+        return request_prescription(
+            messages,
+            user_id=user.id,
+            request_id=getattr(request.state, "request_id", None),
+        )
+    except AITimeoutError:
+        raise HTTPException(status_code=504, detail="AI response timed out") from None
+    except AICallError:
+        raise HTTPException(status_code=502, detail="AI request failed") from None

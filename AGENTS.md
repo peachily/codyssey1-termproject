@@ -29,7 +29,7 @@
 
 - 최종 처방 데이터는 `keyword`, `color`, `message`입니다. `keyword`와 `color`는 내부 분류값이며 사용자 화면에 문자열로 표시할 의무는 없습니다. 프론트엔드는 `color`를 마법약의 시각적 표현에 사용할 수 있습니다.
 - 일반 대화 Q/A 저장과 최종 처방은 구분합니다. 최종 처방은 DB에 저장하지 않으며 이전 처방 조회 기능을 제공하지 않습니다.
-- 처방 endpoint 경로와 최종 request/response 형식은 미확정입니다. 임의로 확정하거나 구현하지 않습니다.
+- 처방은 `POST /api/prescription`으로 요청합니다. 요청·응답 형식은 아래 API Convention을 따릅니다.
 
 ## 고정 기술 스택
 
@@ -328,6 +328,35 @@ Request body 없음.
 
 - 401: 로그인되지 않은 사용자
 
+### POST /api/prescription
+
+#### 설명
+
+로그인 사용자의 최근 최대 5개 Q/A를 바탕으로 마법약 처방을 생성합니다. 서버가 `keyword`를 검증하고 `color`를 고정 매핑합니다. 처방은 DB에 저장하지 않습니다.
+
+#### Request
+
+Request body 없음.
+
+#### Success Response
+
+200 OK
+
+```json
+{
+  "keyword": "ANXIETY",
+  "color": "BLUE",
+  "message": "오늘 다 해결하지 않아도 괜찮아요. 지금은 편히 쉬어가요."
+}
+```
+
+#### Error Response
+
+- 400: 처방에 사용할 대화 기록 없음
+- 401: 로그인되지 않은 사용자
+- 502: AI 호출 실패 또는 처방 형식 오류
+- 504: AI timeout
+
 ### GET /health
 
 #### 설명
@@ -440,7 +469,8 @@ frontend/
 
 - AI 담당은 공통 처방 계약의 keyword와 짧은 message를 생성하고, 서버는 keyword 검증과 고정 color 매핑을 수행합니다.
 - 프론트엔드는 최종 처방을 표시합니다. 처방을 `Chat.answer`에 우회 저장하거나 users·chats에 처방 컬럼을 추가하지 않습니다.
-- 처방 endpoint·최종 request/response·message의 구체적인 검증 규칙은 관련 담당자와 합의합니다.
+- 서버는 AI 출력에서 `keyword`와 `message`만 사용합니다. 허용되지 않은 `keyword`, 빈 `message`, 해석할 수 없는 형식은 AI 호출 실패(HTTP 502)로 처리합니다.
+- 처방을 요청하는 시점과 화면 흐름은 프론트엔드에서 정합니다. 대화 응답에는 처방 시점을 알리는 값을 넣지 않습니다.
 
 ### 로컬 개발 및 통합 검증
 

@@ -20,3 +20,9 @@ class ChatResponse(BaseModel):
     question: str
     answer: str
     created_at: datetime
+
+
+class PrescriptionResponse(BaseModel):
+    keyword: str
+    color: str
+    message: str
