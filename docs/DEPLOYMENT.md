@@ -5,6 +5,7 @@
 | 변수 | 용도·설정 |
 | --- | --- |
 | `SECRET_KEY` | 세션 쿠키 서명용 비밀값 |
+| `SESSION_HTTPS_ONLY` | 로컬 HTTP는 `false`, Railway HTTPS 배포는 `true`. 누락·빈 값은 `false` |
 | `DATABASE_URL` | 로컬 `sqlite:///./chatbot.db`, Railway `sqlite:////data/chatbot.db` |
 | `CODYSSEY_API_KEY` | Codyssey 인증용 virtual key |
 | `AI_API_URL` | `https://copa.codyssey.kr/v1/chat/completions` |
@@ -12,6 +13,8 @@
 | `AI_TIMEOUT` | `30`초 |
 
 배포 시 Railway Variables에 설정합니다. 로컬에서는 환경 변수 또는 Git에서 제외되는 `.env`로 관리합니다. 비밀값은 저장소에 포함하지 않습니다.
+
+`SECRET_KEY`는 서버 실행 전에 설정해야 합니다. 누락·빈 값·공백만 있는 값이면 서버 실행 초기에 설정 오류가 발생합니다. `SESSION_HTTPS_ONLY`는 `true` 또는 `false`를 사용하며 대소문자와 앞뒤 공백은 정규화합니다. 그 외 값은 설정 오류로 처리합니다. 세션 쿠키는 `HttpOnly`, `SameSite=lax`, 유지 기간 14일을 사용하고 `SESSION_HTTPS_ONLY=true`이면 `Secure` 속성을 적용합니다.
 
 ## 설치 및 실행
 
