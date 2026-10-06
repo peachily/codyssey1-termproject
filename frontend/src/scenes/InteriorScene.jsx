@@ -1,4 +1,7 @@
 import { useEffect, useRef } from 'react'
+import Owl from '../components/owl/Owl.jsx'
+import AmbientGlow from '../components/scene/AmbientGlow.jsx'
+import DustParticles from '../components/scene/DustParticles.jsx'
 import SceneCanvas from '../components/scene/SceneCanvas.jsx'
 import shopInterior from '../assets/backgrounds/shop-interior.png'
 import styles from './InteriorScene.module.css'
@@ -9,7 +12,7 @@ export default function InteriorScene({ auth }) {
 
   return (
     <main className={styles.scene}>
-      <SceneCanvas background={shopInterior} />
+      <SceneCanvas background={shopInterior}><AmbientGlow /><DustParticles /><Owl /></SceneCanvas>
       <section className={styles.controls} aria-label="약방">
         <h1 ref={titleRef} tabIndex={-1} className={styles.title}>까무룩 약방</h1>
         <p>{auth.user.username}님, 어서 오세요.</p>

@@ -45,6 +45,11 @@
   --line-height-body: 1.6;
   --line-height-title: 1.3;
 
+  --motion-breath: 6s;
+  --motion-glow: 8s;
+  --motion-dust: 18s;
+  --dust-size: 2px;
+
   --motion-fast: 160ms;
   --motion-normal: 280ms;
   --motion-scene: 1000ms;
