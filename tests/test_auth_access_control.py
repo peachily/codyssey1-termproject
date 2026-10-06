@@ -3,6 +3,7 @@ import os
 import runpy
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -80,6 +81,45 @@ class AccessControlTests(unittest.TestCase):
         with Session(self.engine) as db:
             db.add(Chat(user_id=self.user_id, question="이전 질문", answer="이전 답변"))
             db.commit()
+
+    def make_signed_in_pair(self):
+        # 계정마다 별도 쿠키 저장소와 실제 가입·로그인 사용
+        other = self.enterContext(TestClient(self.app))
+        accounts = []
+        for client, username, password in (
+            (self.client, "alice_access", "alice-isolation-test-password"),
+            (other, "bob_access", "bob-isolation-test-password"),
+        ):
+            signup = client.post(
+                "/api/auth/signup", json={"username": username, "password": password}
+            )
+            self.assertEqual(signup.status_code, 201)
+            user = signup.json()
+            self.assertEqual(client.get("/api/auth/me").status_code, 401)
+            login = client.post(
+                "/api/auth/login", json={"username": username, "password": password}
+            )
+            self.assertEqual(login.status_code, 200)
+            self.assertEqual(login.json(), user)
+            self.assertEqual(client.get("/api/auth/me").json(), user)
+            accounts.append((client, user))
+        return accounts
+
+    def seed_user_chats(self, user_id, label, count=7):
+        # 두 사용자의 기록을 구분할 문구와 같은 시각 기준 사용
+        start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        pairs = [(f"{label}-question-{number}", f"{label}-answer-{number}")
+                 for number in range(count)]
+        with Session(self.engine) as db:
+            for number, (question, answer) in enumerate(pairs):
+                db.add(Chat(
+                    user_id=user_id,
+                    question=question,
+                    answer=answer,
+                    created_at=start + timedelta(seconds=number),
+                ))
+            db.commit()
+        return pairs
 
     def read_chats(self):
         with Session(self.engine) as db:
@@ -232,6 +272,175 @@ class AccessControlTests(unittest.TestCase):
         self.prescription_ai.assert_called_once()
         self.assertEqual(len(user_queries), 1)
         self.assertEqual(self.read_chats(), before)
+
+    def test_two_clients_save_chats_under_their_session_user(self):
+        """두 실제 로그인 계정의 대화 저장 사용자 분리"""
+        accounts = self.make_signed_in_pair()
+        before_users = self.read_users()
+        expected = []
+        self.chat_ai.side_effect = ["alice-private-answer", "bob-private-answer"]
+        for (client, user), label in zip(accounts, ("alice", "bob")):
+            with self.subTest(username=user["username"]):
+                question = f"{label}-private-question"
+                response = client.post("/api/chat", json={"message": question})
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json()["answer"], f"{label}-private-answer")
+                self.assertEqual(self.chat_ai.call_args.kwargs["user_id"], user["id"])
+                expected.append((user["id"], question, f"{label}-private-answer"))
+                self.assertEqual(client.get("/api/auth/me").json(), user)
+        self.assertEqual(self.read_chats(), expected)
+        self.assertEqual(self.chat_ai.call_count, 2)
+        self.assertEqual(self.read_users(), before_users)
+
+    def test_chat_context_uses_only_each_users_latest_five_pairs(self):
+        """각 계정의 최근 5개 대화만 시간순 챗봇 문맥에 포함"""
+        accounts = self.make_signed_in_pair()
+        histories = [self.seed_user_chats(user["id"], label)
+                     for (_, user), label in zip(accounts, ("alice", "bob"))]
+        for (client, user), history in zip(accounts, histories):
+            with self.subTest(username=user["username"]):
+                question = f"{user['username']}-current-question"
+                response = client.post("/api/chat", json={"message": question})
+                self.assertEqual(response.status_code, 200)
+                expected = []
+                for prior_question, prior_answer in history[-5:]:
+                    expected.extend([
+                        {"role": "user", "content": prior_question},
+                        {"role": "assistant", "content": prior_answer},
+                    ])
+                expected.append({"role": "user", "content": question})
+                messages = self.chat_ai.call_args.args[0]
+                self.assertEqual(messages[0]["role"], "system")
+                self.assertEqual(messages[1:], expected)
+                self.assertEqual(self.chat_ai.call_args.kwargs["user_id"], user["id"])
+        self.assertEqual(self.chat_ai.call_count, 2)
+
+    def test_prescription_context_uses_only_each_users_latest_five_pairs(self):
+        """각 계정의 최근 5개 대화만 처방 입력에 포함 및 처방 미저장"""
+        accounts = self.make_signed_in_pair()
+        histories = [self.seed_user_chats(user["id"], label)
+                     for (_, user), label in zip(accounts, ("alice", "bob"))]
+        before = self.read_chats()
+        for (client, user), history in zip(accounts, histories):
+            with self.subTest(username=user["username"]):
+                response = client.post("/api/prescription")
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json(), self.prescription)
+                transcript = "\n".join(f"손님: {question}\n주인: {answer}"
+                                       for question, answer in history[-5:])
+                messages = self.prescription_ai.call_args.args[0]
+                self.assertEqual(messages[1], {
+                    "role": "user",
+                    "content": f"아래는 손님과 나눈 대화입니다.\n\n{transcript}",
+                })
+                self.assertEqual(self.prescription_ai.call_args.kwargs["user_id"], user["id"])
+        self.assertEqual(self.prescription_ai.call_count, 2)
+        self.assertEqual(self.read_chats(), before)
+
+    def test_other_users_history_does_not_allow_prescription_for_empty_user(self):
+        """본인 대화가 없으면 다른 계정 기록으로 처방 생성 불가"""
+        (client, user), (other, other_user) = self.make_signed_in_pair()
+        self.seed_user_chats(other_user["id"], "bob")
+        before = self.read_chats()
+        response = client.post("/api/prescription")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {"detail": "No chats to prescribe"})
+        self.prescription_ai.assert_not_called()
+        self.assertEqual(other.post("/api/prescription").status_code, 200)
+        self.assertEqual(self.prescription_ai.call_args.kwargs["user_id"], other_user["id"])
+        self.assertEqual(client.get("/api/auth/me").json(), user)
+        self.assertEqual(self.read_chats(), before)
+
+    def test_chat_without_own_history_does_not_use_other_users_history(self):
+        """본인 대화가 없으면 타인 기록 없이 현재 질문만 AI에 전달"""
+        (client, user), (_, other_user) = self.make_signed_in_pair()
+        self.seed_user_chats(other_user["id"], "bob")
+        before = self.read_chats()
+        response = client.post("/api/chat", json={"message": "alice-first-question"})
+        self.assertEqual(response.status_code, 200)
+        messages = self.chat_ai.call_args.args[0]
+        self.assertEqual(messages[1:], [{"role": "user", "content": "alice-first-question"}])
+        self.assertEqual(self.chat_ai.call_args.kwargs["user_id"], user["id"])
+        self.assertEqual(self.read_chats(), before + [(user["id"], "alice-first-question", self.answer)])
+
+    def test_supplied_ids_do_not_change_chat_owner_or_context(self):
+        """본문·쿼리·헤더의 타인 ID가 챗봇 저장·문맥 대상을 바꾸지 않음"""
+        accounts = self.make_signed_in_pair()
+        histories = [self.seed_user_chats(user["id"], label)
+                     for (_, user), label in zip(accounts, ("alice", "bob"))]
+        for index, ((client, user), history) in enumerate(zip(accounts, histories)):
+            with self.subTest(username=user["username"]):
+                other_id = accounts[1 - index][1]["id"]
+                question = f"{user['username']}-spoofed-request"
+                response = client.post(
+                    "/api/chat",
+                    params={"user_id": other_id},
+                    json={"message": question, "user_id": other_id},
+                    headers={"X-User-ID": str(other_id)},
+                )
+                self.assertEqual(response.status_code, 200)
+                expected = []
+                for prior_question, prior_answer in history[-5:]:
+                    expected.extend([
+                        {"role": "user", "content": prior_question},
+                        {"role": "assistant", "content": prior_answer},
+                    ])
+                expected.append({"role": "user", "content": question})
+                self.assertEqual(self.chat_ai.call_args.args[0][1:], expected)
+                self.assertEqual(self.chat_ai.call_args.kwargs["user_id"], user["id"])
+                with Session(self.engine) as db:
+                    saved = db.get(Chat, response.json()["id"])
+                    self.assertEqual(saved.user_id, user["id"])
+                    self.assertEqual(saved.question, question)
+                self.assertEqual(client.get("/api/auth/me").json(), user)
+        self.assertEqual(self.chat_ai.call_count, 2)
+
+    def test_supplied_ids_do_not_change_prescription_context(self):
+        """본문·쿼리·헤더의 타인 ID가 처방 입력 대상을 바꾸지 않음"""
+        accounts = self.make_signed_in_pair()
+        histories = [self.seed_user_chats(user["id"], label)
+                     for (_, user), label in zip(accounts, ("alice", "bob"))]
+        before = self.read_chats()
+        for index, ((client, user), history) in enumerate(zip(accounts, histories)):
+            with self.subTest(username=user["username"]):
+                other_id = accounts[1 - index][1]["id"]
+                response = client.post(
+                    "/api/prescription",
+                    params={"user_id": other_id},
+                    json={"user_id": other_id},
+                    headers={"X-User-ID": str(other_id)},
+                )
+                self.assertEqual(response.status_code, 200)
+                transcript = "\n".join(f"손님: {question}\n주인: {answer}"
+                                       for question, answer in history[-5:])
+                self.assertEqual(self.prescription_ai.call_args.args[0][1]["content"],
+                                 f"아래는 손님과 나눈 대화입니다.\n\n{transcript}")
+                self.assertEqual(self.prescription_ai.call_args.kwargs["user_id"], user["id"])
+                self.assertEqual(client.get("/api/auth/me").json(), user)
+        self.assertEqual(self.prescription_ai.call_count, 2)
+        self.assertEqual(self.read_chats(), before)
+
+    def test_one_clients_logout_keeps_other_clients_protected_access(self):
+        """한 계정 로그아웃 이후 다른 계정의 챗봇·처방 접근 유지"""
+        (client, _), (other, other_user) = self.make_signed_in_pair()
+        history = self.seed_user_chats(other_user["id"], "bob", count=2)
+        before = self.read_chats()
+        self.assertEqual(client.post("/api/auth/logout").status_code, 200)
+        self.assert_protected_requests_are_blocked()
+        self.assertEqual(other.get("/api/auth/me").json(), other_user)
+        self.assertIn("session", other.cookies)
+        response = other.post("/api/chat", json={"message": "bob-after-alice-logout"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.chat_ai.call_args.kwargs["user_id"], other_user["id"])
+        expected = before + [(other_user["id"], "bob-after-alice-logout", self.answer)]
+        self.assertEqual(self.read_chats(), expected)
+        self.assertEqual(other.post("/api/prescription").status_code, 200)
+        transcript = "\n".join(f"손님: {question}\n주인: {answer}"
+                               for question, answer in history + [("bob-after-alice-logout", self.answer)])
+        self.assertEqual(self.prescription_ai.call_args.args[0][1]["content"],
+                         f"아래는 손님과 나눈 대화입니다.\n\n{transcript}")
+        self.assertEqual(self.prescription_ai.call_args.kwargs["user_id"], other_user["id"])
+        self.assertEqual(self.read_chats(), expected)
 
 
 if __name__ == "__main__":
