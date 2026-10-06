@@ -6,6 +6,8 @@ from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import get_current_user
+from app.models import User
 from app.schemas.auth import AuthRequest, AuthUserResponse
 from app.services.auth import (
     DuplicateUsernameError,
@@ -84,3 +86,18 @@ def login(
     request.session.clear()
     request.session["user_id"] = user.id
     return response
+
+
+@router.post("/logout")
+def logout(request: Request) -> dict[str, str]:
+    """현재 클라이언트의 로그인 세션 제거"""
+    # 비로그인·반복 요청에도 같은 응답 반환
+    request.session.clear()
+    return {"message": "logged out"}
+
+
+@router.get("/me", response_model=AuthUserResponse)
+def current_user(user: User = Depends(get_current_user)) -> AuthUserResponse:
+    """세션으로 인증한 현재 사용자 식별 정보 반환"""
+    # 비밀번호·해시를 제외한 응답 필드만 선택
+    return AuthUserResponse(id=user.id, username=user.username)
