@@ -7,7 +7,13 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.schemas.auth import AuthRequest, AuthUserResponse
-from app.services.auth import DuplicateUsernameError, UserSaveError, create_user
+from app.services.auth import (
+    DuplicateUsernameError,
+    UserLookupError,
+    UserSaveError,
+    authenticate_user,
+    create_user,
+)
 
 
 class AuthValidationRoute(APIRoute):
@@ -52,3 +58,29 @@ def signup(
         raise HTTPException(status_code=500, detail="Failed to save user") from None
 
     return AuthUserResponse(id=user.id, username=user.username)
+
+
+@router.post("/login", response_model=AuthUserResponse)
+def login(
+    payload: AuthRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> AuthUserResponse:
+    """사용자 인증 및 로그인 성공 시 세션 교체"""
+    try:
+        user = authenticate_user(
+            db,
+            payload.username,
+            payload.password,
+            request_id=getattr(request.state, "request_id", None),
+        )
+    except UserLookupError:
+        raise HTTPException(status_code=500, detail="Failed to retrieve user") from None
+
+    if user is None:
+        raise HTTPException(status_code=401, detail="Invalid username or password") from None
+
+    response = AuthUserResponse(id=user.id, username=user.username)
+    request.session.clear()
+    request.session["user_id"] = user.id
+    return response
