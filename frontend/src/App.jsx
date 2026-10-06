@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import useAuth from './hooks/useAuth.js'
 import EntranceScene from './scenes/EntranceScene.jsx'
 
 export default function App() {
+  const auth = useAuth()
   const [status, setStatus] = useState('확인 중…')
 
   useEffect(() => {
@@ -28,5 +30,5 @@ export default function App() {
     return () => controller.abort()
   }, [])
 
-  return <EntranceScene status={status} />
+  return <EntranceScene status={status} auth={auth} />
 }

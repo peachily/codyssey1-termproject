@@ -1,7 +1,7 @@
 import { useId, useRef, useState } from 'react'
 import styles from './AuthPanel.module.css'
 
-export default function AuthPanel({ onSubmit, pending = false, error = '', notice = '' }) {
+export default function AuthPanel({ onSubmit, pending = false, error = '', notice = '', onModeChange }) {
   const [mode, setMode] = useState('login')
   const [validation, setValidation] = useState('')
   const formRef = useRef(null)
@@ -39,6 +39,7 @@ export default function AuthPanel({ onSubmit, pending = false, error = '', notic
   }
 
   function switchMode() {
+    onModeChange?.()
     setMode(signup ? 'login' : 'signup')
     setValidation('')
     formRef.current.reset()
