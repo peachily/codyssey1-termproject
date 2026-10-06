@@ -24,6 +24,10 @@ class UserSaveError(Exception):
     """사용자 저장 실패"""
 
 
+class UserLookupError(Exception):
+    """사용자 조회 실패"""
+
+
 def hash_password(password: str) -> str:
     """비밀번호 원문을 유지한 채 저장용 Argon2 해시를 생성"""
     return _password_hasher.hash(password)
@@ -35,6 +39,27 @@ def verify_password(password: str, password_hash: str) -> bool:
         return _password_hasher.verify(password, password_hash)
     except UnknownHashError:
         return False
+
+
+def authenticate_user(
+    db: Session,
+    username: str,
+    password: str,
+    *,
+    request_id: str | None = None,
+) -> User | None:
+    """사용자 조회·비밀번호 원문 검증 및 인증 실패 처리"""
+    username = username.strip()
+    try:
+        user = db.scalar(select(User).where(User.username == username))
+    except SQLAlchemyError:
+        db.rollback()
+        logger.error("auth_lookup_failure request_id=%s reason=db_error", request_id)
+        raise UserLookupError("Failed to retrieve user") from None
+
+    if user is None or not verify_password(password, user.password_hash):
+        return None
+    return user
 
 
 def _is_duplicate_username(error: IntegrityError) -> bool:

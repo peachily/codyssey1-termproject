@@ -134,6 +134,17 @@ class ServerAssemblyTests(unittest.TestCase):
             self.assertEqual(response.status_code, 201)
             self.assertEqual(response.headers["content-type"], "application/json")
             self.assertEqual(response.json()["username"], "static_user")
+            user_id = response.json()["id"]
+            login = client.post(
+                "/api/auth/login",
+                json={"username": "static_user", "password": "static-test-password"},
+            )
+            self.assertEqual(login.status_code, 200)
+            self.assertEqual(
+                client.get("/api/auth/me").json(), {"id": user_id, "username": "static_user"}
+            )
+            self.assertEqual(client.post("/api/auth/logout").json(), {"message": "logged out"})
+            self.assertEqual(client.get("/api/auth/me").status_code, 401)
             self.assertEqual(client.get("/health").json(), {"status": "ok"})
             for path in ("/", "/chat"):
                 with self.subTest(path=path):
@@ -152,6 +163,28 @@ class ServerAssemblyTests(unittest.TestCase):
                         client.post(path, json={"message": "test message"}).status_code,
                         401,
                     )
+
+    def test_authentication_flow_with_real_server_app(self):
+        """실제 서버의 가입·로그인·현재 사용자·로그아웃 흐름 확인"""
+        payload = {"username": "server_auth_user", "password": "  server-auth-password  "}
+        with TestClient(main.app) as client:
+            signup = client.post("/api/auth/signup", json=payload)
+            self.assertEqual(signup.status_code, 201)
+            expected = signup.json()
+            self.assertEqual(client.get("/api/auth/me").status_code, 401)
+            login = client.post("/api/auth/login", json=payload)
+            self.assertEqual(login.status_code, 200)
+            self.assertEqual(login.json(), expected)
+            me = client.get("/api/auth/me")
+            self.assertEqual(me.status_code, 200)
+            self.assertEqual(me.json(), expected)
+            logout = client.post("/api/auth/logout")
+            self.assertEqual(logout.status_code, 200)
+            self.assertEqual(logout.json(), {"message": "logged out"})
+            self.assertNotIn("session", client.cookies)
+            self.assertEqual(client.get("/api/auth/me").status_code, 401)
+            self.assertEqual(client.post("/api/auth/logout").status_code, 200)
+            self.assertEqual(client.get("/health").json(), {"status": "ok"})
 
     def test_unknown_api_path_is_json_404_not_frontend_fallback(self):
         with TestClient(main.app) as client:
