@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import EntranceScene from './scenes/EntranceScene.jsx'
 
 export default function App() {
   const [status, setStatus] = useState('확인 중…')
@@ -27,10 +28,5 @@ export default function App() {
     return () => controller.abort()
   }, [])
 
-  return (
-    <main>
-      <h1>개발 환경 연결 확인</h1>
-      <p role="status">{status}</p>
-    </main>
-  )
+  return <EntranceScene status={status} />
 }
