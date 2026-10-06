@@ -54,11 +54,31 @@
 }
 
 .authContent { width: min(100%, var(--width-auth-panel)); display: grid; gap: var(--space-2); }
-.authContent > button, .session button {
+.authContent > button {
   padding: var(--space-2) var(--space-3);
   min-height: var(--control-height);
   border: var(--border-thin) solid var(--color-plum-500);
   border-radius: var(--radius-small);
   background: var(--color-night-900);
 }
-.session { padding: var(--space-6); background: var(--color-night-900); border-radius: var(--radius-medium); }
+
+
+.entering {
+  transform-origin: 50% 56%;
+  animation: enterShop var(--motion-scene) var(--motion-ease) forwards;
+}
+.fade {
+  position: absolute;
+  inset: 0;
+  z-index: var(--layer-overlay);
+  background: var(--color-plum-700);
+  animation: coverScene var(--motion-scene) var(--motion-ease) forwards;
+}
+@keyframes enterShop {
+  from { transform: scale(1); }
+  to { transform: scale(1.18); }
+}
+@keyframes coverScene {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

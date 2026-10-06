@@ -1,10 +1,10 @@
 import styles from './SceneCanvas.module.css'
 
-export default function SceneCanvas({ background, children }) {
+export default function SceneCanvas({ background, children, motionClassName = '' }) {
   return (
     <div className={styles.viewport}>
       <div className={styles.artboard}>
-        <div className={styles.motion}>
+        <div className={`${styles.motion} ${motionClassName}`}>
           <img
             className={styles.background}
             src={background}
