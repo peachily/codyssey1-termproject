@@ -37,7 +37,11 @@ class AuthValidationRoute(APIRoute):
         return auth_request_handler
 
 
-router = APIRouter(prefix="/api/auth", route_class=AuthValidationRoute)
+router = APIRouter(
+    prefix="/api/auth",
+    tags=["auth"],
+    route_class=AuthValidationRoute,
+)
 
 
 @router.post("/signup", response_model=AuthUserResponse, status_code=201)
