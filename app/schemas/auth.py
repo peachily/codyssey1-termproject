@@ -30,3 +30,10 @@ class AuthRequest(BaseModel):
         if not value.strip():
             raise ValueError("Password must not be blank")
         return value
+
+
+class AuthUserResponse(BaseModel):
+    """인증 API의 사용자 식별 정보 응답"""
+
+    id: int
+    username: str
