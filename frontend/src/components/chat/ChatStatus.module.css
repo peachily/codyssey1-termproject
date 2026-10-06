@@ -1,0 +1,2 @@
+.status { font-size: var(--font-size-small); overflow-wrap: anywhere; }
+.error { color: var(--color-error); }
