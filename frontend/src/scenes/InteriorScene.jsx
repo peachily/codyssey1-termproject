@@ -1,3 +1,4 @@
+import useChat from '../hooks/useChat.js'
 import { useEffect, useRef } from 'react'
 import ChatBubble from '../components/chat/ChatBubble.jsx'
 import ChatInput from '../components/chat/ChatInput.jsx'
@@ -9,7 +10,8 @@ import SceneCanvas from '../components/scene/SceneCanvas.jsx'
 import shopInterior from '../assets/backgrounds/shop-interior.png'
 import styles from './InteriorScene.module.css'
 
-export default function InteriorScene({ auth, chat = { messages: [], pending: false, error: '' } }) {
+export default function InteriorScene({ auth }) {
+  const chat = useChat(auth.expire)
   const logRef = useRef(null)
   const followRef = useRef(true)
   useEffect(() => {

@@ -19,6 +19,15 @@ export default function useAuth() {
 
   const clearFeedback = useCallback(() => { setError(''); setNotice('') }, [])
 
+  const expire = useCallback(() => {
+    active.current?.abort()
+    active.current = null
+    setPending(false)
+    setSession({ phase: 'anonymous', user: null, source: null })
+    setError('로그인이 만료됐어요. 다시 로그인해주세요.')
+    setNotice('')
+  }, [])
+
   const checkSession = useCallback(async () => {
     if (active.current) return
     const controller = new AbortController()
@@ -81,5 +90,5 @@ export default function useAuth() {
   }, [clearFeedback])
 
   return { ...session, pending: pending || session.phase === 'checking', error, notice,
-    submit: perform, logout: () => perform('logout'), retry: checkSession, clearFeedback }
+    submit: perform, logout: () => perform('logout'), retry: checkSession, clearFeedback, expire }
 }
