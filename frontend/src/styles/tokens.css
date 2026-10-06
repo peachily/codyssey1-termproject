@@ -10,6 +10,9 @@
   --color-error: #c98585;
   --color-overlay: rgb(23 19 31 / 56%);
 
+  --potion-width: clamp(5rem, 12vw, 8rem);
+  --color-glass: rgb(238 232 220 / 12%);
+
   --potion-blue: #718da6;
   --potion-purple: #927da1;
   --potion-pink: #c79aa8;
