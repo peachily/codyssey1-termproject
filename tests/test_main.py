@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app import database, main
 from app.database import build_engine, get_db
-from app.models import User
+from app.models import Chat, User
 from app.routers import chat as chat_router
 from app.services.auth import verify_password
 
@@ -165,8 +165,15 @@ class ServerAssemblyTests(unittest.TestCase):
                     )
 
     def test_authentication_flow_with_real_server_app(self):
-        """실제 서버의 가입·로그인·현재 사용자·로그아웃 흐름 확인"""
+        """실제 서버의 가입·로그인·챗봇·처방·로그아웃 및 후속 차단 확인"""
         payload = {"username": "server_auth_user", "password": "  server-auth-password  "}
+        chat_ai = self.enterContext(patch.object(
+            chat_router, "request_chat_completion", return_value="server-flow-answer"
+        ))
+        prescription = {"keyword": "STRESS", "color": "GREEN", "message": "잠시 쉬어가요."}
+        prescription_ai = self.enterContext(patch.object(
+            chat_router, "request_prescription", return_value=prescription
+        ))
         with TestClient(main.app) as client:
             signup = client.post("/api/auth/signup", json=payload)
             self.assertEqual(signup.status_code, 201)
@@ -178,11 +185,28 @@ class ServerAssemblyTests(unittest.TestCase):
             me = client.get("/api/auth/me")
             self.assertEqual(me.status_code, 200)
             self.assertEqual(me.json(), expected)
+            chat = client.post("/api/chat", json={"message": "서버 흐름 질문"})
+            self.assertEqual(chat.status_code, 200)
+            self.assertEqual(chat.json()["answer"], "server-flow-answer")
+            self.assertEqual(chat_ai.call_args.kwargs["user_id"], expected["id"])
+            with Session(self.engine) as db:
+                saved = db.get(Chat, chat.json()["id"])
+                self.assertEqual(saved.user_id, expected["id"])
+                self.assertEqual(saved.question, "서버 흐름 질문")
+            result = client.post("/api/prescription")
+            self.assertEqual(result.status_code, 200)
+            self.assertEqual(result.json(), prescription)
+            self.assertEqual(prescription_ai.call_args.kwargs["user_id"], expected["id"])
             logout = client.post("/api/auth/logout")
             self.assertEqual(logout.status_code, 200)
             self.assertEqual(logout.json(), {"message": "logged out"})
             self.assertNotIn("session", client.cookies)
             self.assertEqual(client.get("/api/auth/me").status_code, 401)
+            for path in ("/api/chat", "/api/prescription"):
+                with self.subTest(path=path):
+                    self.assertEqual(client.post(path, json={"message": "차단 질문"}).status_code, 401)
+            chat_ai.assert_called_once()
+            prescription_ai.assert_called_once()
             self.assertEqual(client.post("/api/auth/logout").status_code, 200)
             self.assertEqual(client.get("/health").json(), {"status": "ok"})
 

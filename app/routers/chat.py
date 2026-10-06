@@ -6,6 +6,7 @@ from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import get_current_user
 from app.models import User
 from app.schemas.chat import ChatRequest, ChatResponse, PrescriptionResponse
 from app.services.ai import (
@@ -37,11 +38,6 @@ class BadRequestRoute(APIRoute):
 router = APIRouter(prefix="/api", route_class=BadRequestRoute)
 
 
-def get_current_user() -> User:
-    """Placeholder until the session-based auth dependency is connected."""
-    raise HTTPException(status_code=401, detail="Not authenticated")
-
-
 @router.post("/chat", response_model=ChatResponse)
 def create_chat(
     payload: ChatRequest,
@@ -49,13 +45,15 @@ def create_chat(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    messages = build_chat_messages(get_recent_chats(db, user.id), payload.message)
+    # rollback 이후 사용자 재조회 방지를 위한 ID 선확보
+    user_id = user.id
+    messages = build_chat_messages(get_recent_chats(db, user_id), payload.message)
     # End the read transaction so no database lock is held while waiting for the AI.
     db.rollback()
     try:
         answer = request_chat_completion(
             messages,
-            user_id=user.id,
+            user_id=user_id,
             request_id=getattr(request.state, "request_id", None),
         )
     except AITimeoutError:
@@ -65,7 +63,7 @@ def create_chat(
     # The chat bubble shows one paragraph; line breaks from the model are folded into spaces.
     answer = " ".join(answer.split())
     try:
-        return save_chat(db, user.id, payload.message, answer)
+        return save_chat(db, user_id, payload.message, answer)
     except ChatSaveError:
         raise HTTPException(status_code=500, detail="Failed to save chat") from None
 
@@ -76,7 +74,9 @@ def create_prescription(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    recent_chats = get_recent_chats(db, user.id)
+    # rollback 이후 사용자 재조회 방지를 위한 ID 선확보
+    user_id = user.id
+    recent_chats = get_recent_chats(db, user_id)
     messages = build_prescription_messages(recent_chats)
     db.rollback()
     if not recent_chats:
@@ -84,7 +84,7 @@ def create_prescription(
     try:
         return request_prescription(
             messages,
-            user_id=user.id,
+            user_id=user_id,
             request_id=getattr(request.state, "request_id", None),
         )
     except AITimeoutError:

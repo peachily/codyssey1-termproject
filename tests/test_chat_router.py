@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.database import build_engine, get_db, initialize_database
 from app.models import Chat, User
@@ -41,6 +42,8 @@ class RouterTestCase(unittest.TestCase):
                 yield db
 
         self.app = FastAPI()
+        # 인증 대체 제거 시 공통 의존성에서 사용할 테스트 세션
+        self.app.add_middleware(SessionMiddleware, secret_key="chat-router-test-secret-key")
         self.app.include_router(chat_router.router)
         self.app.dependency_overrides[get_db] = override_db
         self.app.dependency_overrides[chat_router.get_current_user] = lambda: User(id=1, username='alice')
