@@ -24,6 +24,12 @@
   --space-8: 32px;
   --space-12: 48px;
 
+  --width-auth-panel: 24rem;
+  --control-height: 2.75rem;
+  --border-thin: 1px;
+  --opacity-disabled: 0.6;
+  --font-size-heading: 1.5rem;
+
   --radius-small: 6px;
   --radius-medium: 12px;
   --shadow-paper: 0 4px 16px rgb(23 19 31 / 12%);

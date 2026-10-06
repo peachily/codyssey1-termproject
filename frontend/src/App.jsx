@@ -1,7 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import useAuth from './hooks/useAuth.js'
+import InteriorScene from './scenes/InteriorScene.jsx'
 import EntranceScene from './scenes/EntranceScene.jsx'
 
 export default function App() {
+  const auth = useAuth()
+  const [entered, setEntered] = useState(false)
+  const completeEntry = useCallback(() => setEntered(true), [])
+
+  useEffect(() => { if (!auth.user) setEntered(false) }, [auth.user])
   const [status, setStatus] = useState('확인 중…')
 
   useEffect(() => {
@@ -28,5 +35,7 @@ export default function App() {
     return () => controller.abort()
   }, [])
 
-  return <EntranceScene status={status} />
+  if (auth.user && (auth.source === 'restored' || entered)) return <InteriorScene auth={auth} />
+  return <EntranceScene status={status} auth={auth}
+    entering={auth.phase === 'authenticated' && auth.source === 'login'} onEntered={completeEntry} />
 }
