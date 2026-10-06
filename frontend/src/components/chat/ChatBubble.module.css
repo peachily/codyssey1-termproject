@@ -1,0 +1,5 @@
+.bubble { max-width: 90%; padding: var(--space-2) var(--space-3); white-space: pre-wrap; overflow-wrap: anywhere; }
+.user { align-self: flex-end; background: var(--color-overlay); border-radius: var(--radius-small); }
+.owl { align-self: flex-start; font-family: var(--font-display); }
+.speaker { display: block; font-size: var(--font-size-small); color: var(--color-cream-200); margin-bottom: var(--space-1); }
+.failed { color: var(--color-error); font-size: var(--font-size-small); }

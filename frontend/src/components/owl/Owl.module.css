@@ -1,0 +1,25 @@
+.owl {
+  position: absolute;
+  left: 50%;
+  top: 58.7%;
+  width: 16.75%;
+  aspect-ratio: 879 / 1242;
+  transform: translate(-50%, -100%);
+  z-index: var(--layer-character);
+  pointer-events: none;
+}
+/* Visible body bounds: x 97..975, y 87..1328 in the original canvas. */
+.owl img {
+  position: absolute;
+  width: 127.645%;
+  max-width: none;
+  height: auto;
+  left: -11.035%;
+  top: -7.005%;
+  transform-origin: 47.8% 94.79%;
+  animation: breathe var(--motion-breath) ease-in-out infinite;
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.004); }
+}

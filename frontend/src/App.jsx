@@ -35,7 +35,7 @@ export default function App() {
     return () => controller.abort()
   }, [])
 
-  if (auth.user && (auth.source === 'restored' || entered)) return <InteriorScene auth={auth} />
+  if (auth.user && (auth.source === 'restored' || entered)) return <InteriorScene key={auth.user.id} auth={auth} />
   return <EntranceScene status={status} auth={auth}
     entering={auth.phase === 'authenticated' && auth.source === 'login'} onEntered={completeEntry} />
 }

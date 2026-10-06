@@ -24,6 +24,7 @@
   --space-8: 32px;
   --space-12: 48px;
 
+  --width-dialogue: 42rem;
   --width-auth-panel: 24rem;
   --control-height: 2.75rem;
   --border-thin: 1px;
@@ -44,6 +45,11 @@
   --font-size-title: 2rem;
   --line-height-body: 1.6;
   --line-height-title: 1.3;
+
+  --motion-breath: 6s;
+  --motion-glow: 8s;
+  --motion-dust: 18s;
+  --dust-size: 2px;
 
   --motion-fast: 160ms;
   --motion-normal: 280ms;
