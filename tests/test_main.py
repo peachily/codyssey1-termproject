@@ -1,3 +1,4 @@
+import runpy
 import tempfile
 import unittest
 from pathlib import Path
@@ -7,10 +8,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import inspect
 from sqlalchemy.orm import Session
 
-from app import main
+from app import database, main
 from app.database import build_engine, get_db
 from app.models import User
 from app.routers import chat as chat_router
+from app.services.auth import verify_password
 
 
 class ServerAssemblyTests(unittest.TestCase):
@@ -27,6 +29,7 @@ class ServerAssemblyTests(unittest.TestCase):
             with Session(self.engine, expire_on_commit=False) as db:
                 yield db
 
+        self.override_db = override_db
         main.app.dependency_overrides[get_db] = override_db
         self.addCleanup(main.app.dependency_overrides.clear)
 
@@ -58,6 +61,97 @@ class ServerAssemblyTests(unittest.TestCase):
                     response = client.post(path, json={"message": "hello"})
                     self.assertEqual(response.status_code, 401)
                     self.assertEqual(response.headers["content-type"], "application/json")
+
+    def test_signup_is_registered_and_shares_request_id_with_save_log(self):
+        """실제 서버의 회원가입·저장·추적 로그 및 세션 미생성 확인"""
+        password = "server-signup-test-password"
+        with TestClient(main.app) as client:
+            with self.assertLogs("app", level="INFO") as captured:
+                response = client.post(
+                    "/api/auth/signup",
+                    json={"username": "  user_123  ", "password": password},
+                )
+            self.assertEqual(response.status_code, 201)
+            self.assertEqual(response.headers["content-type"], "application/json")
+            self.assertNotIn("set-cookie", response.headers)
+            self.assertNotIn("session", client.cookies)
+            for path in ("/api/chat", "/api/prescription"):
+                with self.subTest(path=path):
+                    self.assertEqual(
+                        client.post(path, json={"message": "test message"}).status_code,
+                        401,
+                    )
+
+        user_id = response.json()["id"]
+        self.assertEqual(response.json(), {"id": user_id, "username": "user_123"})
+        with Session(self.engine) as db:
+            stored = db.get(User, user_id)
+            self.assertIsNotNone(stored)
+            self.assertEqual(stored.username, "user_123")
+            self.assertTrue(verify_password(password, stored.password_hash))
+            password_hash = stored.password_hash
+        request_log = next(
+            record.getMessage() for record in captured.records if record.name == "app.main"
+        )
+        save_log = next(
+            record.getMessage()
+            for record in captured.records
+            if record.name == "app.services.auth"
+        )
+        self.assertRegex(
+            request_log,
+            r"^request_received request_id=[0-9a-f]{12} method=POST path=/api/auth/signup$",
+        )
+        request_id = request_log.split("request_id=", 1)[1].split()[0]
+        self.assertEqual(save_log, f"db_save_success request_id={request_id} user_id={user_id}")
+        self.assertNotIn(password, response.text + "\n".join(captured.output))
+        self.assertNotIn(password_hash, response.text + "\n".join(captured.output))
+
+    def test_signup_and_frontend_paths_work_with_static_mount(self):
+        """정적 파일 제공 환경의 실제 서버 라우터 등록 순서 검증"""
+        directory = self.enterContext(tempfile.TemporaryDirectory())
+        root = Path(directory)
+        main_path = root / "app" / "main.py"
+        main_path.parent.mkdir()
+        # 실제 서버 소스를 임시 경로에서 실행해 정적 파일 분기 확인
+        main_path.write_text(Path(main.__file__).read_text(encoding="utf-8"), encoding="utf-8")
+        frontend = root / "frontend" / "dist"
+        (frontend / "assets").mkdir(parents=True)
+        html = "<html><body>Test signup frontend</body></html>"
+        (frontend / "index.html").write_text(html, encoding="utf-8")
+        (frontend / "assets" / "test.css").write_text("body { color: black; }", encoding="utf-8")
+
+        with patch.object(database, "engine", self.engine):
+            server = runpy.run_path(str(main_path), run_name="signup_static_test_server")
+        app = server["app"]
+        app.dependency_overrides[get_db] = self.override_db
+        self.addCleanup(app.dependency_overrides.clear)
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/auth/signup",
+                json={"username": "static_user", "password": "static-test-password"},
+            )
+            self.assertEqual(response.status_code, 201)
+            self.assertEqual(response.headers["content-type"], "application/json")
+            self.assertEqual(response.json()["username"], "static_user")
+            self.assertEqual(client.get("/health").json(), {"status": "ok"})
+            for path in ("/", "/chat"):
+                with self.subTest(path=path):
+                    page = client.get(path, headers={"Accept": "text/html"})
+                    self.assertEqual(page.status_code, 200)
+                    self.assertEqual(page.text, html)
+            asset = client.get("/assets/test.css")
+            self.assertEqual(asset.status_code, 200)
+            self.assertEqual(asset.text, "body { color: black; }")
+            missing_api = client.get("/api/unknown", headers={"Accept": "text/html"})
+            self.assertEqual(missing_api.status_code, 404)
+            self.assertEqual(missing_api.headers["content-type"], "application/json")
+            for path in ("/api/chat", "/api/prescription"):
+                with self.subTest(path=path):
+                    self.assertEqual(
+                        client.post(path, json={"message": "test message"}).status_code,
+                        401,
+                    )
 
     def test_unknown_api_path_is_json_404_not_frontend_fallback(self):
         with TestClient(main.app) as client:
