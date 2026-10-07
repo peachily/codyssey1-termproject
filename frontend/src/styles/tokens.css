@@ -8,10 +8,27 @@
   --color-lamp: #d8bc72;
   --color-lamp-soft: #bca66b;
   --color-error: #c98585;
+  --color-auth-surface: rgb(20 24 40 / 52%);
+  --color-input-surface: rgb(23 19 31 / 42%);
+  --color-dialogue-surface: rgb(33 28 45 / 78%);
+  --color-paper: #e5dbc5;
+  --color-paper-edge: #d4c4a5;
+  --color-paper-ink: #382f3f;
+  --color-paper-error: #853e45;
+  --opacity-glow-low: 0.09;
+  --opacity-glow-high: 0.14;
+  --opacity-dust-low: 0.24;
+  --opacity-dust-high: 0.42;
+  --breath-scale: 1.005;
+  --motion-reveal: 640ms;
+  --motion-owl-delay: 140ms;
+  --motion-greeting-delay: 300ms;
+  --width-prescription: 42rem;
   --color-overlay: rgb(23 19 31 / 56%);
 
-  --potion-width: clamp(5rem, 12vw, 8rem);
+  --potion-width: clamp(12rem, 26vw, 18rem);
   --color-glass: rgb(238 232 220 / 12%);
+  --color-liquid-highlight: color-mix(in srgb, var(--color-cream-100) 70%, transparent);
 
   --potion-blue: #718da6;
   --potion-purple: #927da1;

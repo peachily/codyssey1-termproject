@@ -1,6 +1,9 @@
 .form { display: grid; gap: var(--space-2); }
-.form textarea { width: 100%; resize: vertical; min-height: var(--control-height); max-height: 25svh; border: var(--border-thin) solid var(--color-plum-500); border-radius: var(--radius-small); padding: var(--space-2) var(--space-3); background: var(--color-overlay); }
+.form textarea { width: 100%; resize: none; min-height: var(--control-height); max-height: 25svh; border: var(--border-thin) solid var(--color-plum-500); border-radius: var(--radius-small); padding: var(--space-2) var(--space-3); background: var(--color-overlay); }
 .actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); font-size: var(--font-size-small); }
 .actions button { margin-left: auto; min-height: var(--control-height); padding: var(--space-2) var(--space-3); border: 0; border-radius: var(--radius-small); background: var(--color-lamp); color: var(--color-night-950); }
 .actions button:disabled { opacity: var(--opacity-disabled); cursor: wait; }
 .error { font-size: var(--font-size-small); color: var(--color-error); }
+
+.error:empty { display: none; }
+.form label { font-family: var(--font-display); }

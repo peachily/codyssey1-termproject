@@ -3,6 +3,7 @@ import styles from './AuthPanel.module.css'
 
 export default function AuthPanel({ onSubmit, pending = false, error = '', notice = '', onModeChange }) {
   const [mode, setMode] = useState('login')
+  const [registered, setRegistered] = useState(false)
   const [validation, setValidation] = useState('')
   const formRef = useRef(null)
   const id = useId()
@@ -32,6 +33,7 @@ export default function AuthPanel({ onSubmit, pending = false, error = '', notic
       form.reset()
       if (signup) {
         setMode('login')
+        setRegistered(true)
         form.elements.username.value = username
         form.elements.password.focus()
       }
@@ -40,7 +42,8 @@ export default function AuthPanel({ onSubmit, pending = false, error = '', notic
 
   function switchMode() {
     onModeChange?.()
-    setMode(signup ? 'login' : 'signup')
+    setMode(registered ? 'login' : signup ? 'login' : 'signup')
+    setRegistered(false)
     setValidation('')
     formRef.current.reset()
     formRef.current.elements.username.focus()
@@ -48,7 +51,7 @@ export default function AuthPanel({ onSubmit, pending = false, error = '', notic
 
   return (
     <section className={styles.panel} aria-labelledby={`${id}-title`}>
-      <h2 id={`${id}-title`} className={styles.title}>{signup ? '처음 오셨나요?' : '잠 못 드는 밤, 까무룩'}</h2>
+      <h2 id={`${id}-title`} className={styles.title}>{signup ? '처음 오셨나요?' : '까무룩 잠들고 싶은 밤,'}</h2>
       <p>{signup ? '작은 약방에 이름을 남겨주세요.' : '오늘의 마음을 잠시 내려놓고 가세요.'}</p>
       <form ref={formRef} onSubmit={submit} noValidate aria-busy={pending}
         onKeyDown={(event) => {
@@ -62,13 +65,14 @@ export default function AuthPanel({ onSubmit, pending = false, error = '', notic
           <input id={`${id}-password`} name="password" type="password"
             autoComplete={signup ? 'new-password' : 'current-password'} required aria-describedby={`${id}-feedback`} />
           <p id={`${id}-feedback`} className={styles.error} role="alert">{validation || error}</p>
+          <p className={styles.notice} role="status">{notice}</p>
+          {registered && <button className={styles.secondary} type="button" onClick={switchMode}>다른 이름으로 들어가기</button>}
           <button className={styles.primary} type="submit">{pending ? '확인하고 있어요…' : signup ? '가입하기' : '로그인'}</button>
-          <button className={styles.secondary} type="button" onClick={switchMode}>
-            {signup ? '로그인으로 돌아가기' : '처음 방문하셨나요? 회원가입'}
-          </button>
+          {!registered && <button className={styles.secondary} type="button" onClick={switchMode}>
+            {signup ? '로그인으로 돌아가기' : '처음 방문하셨나요?'}
+          </button>}
         </fieldset>
       </form>
-      <p role="status">{notice}</p>
     </section>
   )
 }
