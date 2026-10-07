@@ -1,6 +1,56 @@
-.bottle { position: relative; width: var(--potion-width); height: calc(var(--potion-width) * 1.35); margin: var(--space-4) auto; }
-.stopper { position: absolute; width: 24%; height: 12%; left: 38%; top: 0; border-radius: var(--radius-small); background: var(--color-lamp-soft); }
-.neck { position: absolute; width: 28%; height: 25%; left: 36%; top: 10%; border: var(--border-thin) solid var(--color-cream-200); background: var(--color-glass); }
-.glass { position: absolute; inset: 29% 0 0; border: var(--border-thin) solid var(--color-cream-200); border-radius: 42% 42% 30% 30%; overflow: hidden; background: var(--color-glass); }
-.liquid { position: absolute; inset: 32% 0 0; background: var(--liquid-color); opacity: 0.8; border-radius: 45% 45% 0 0 / 10% 10% 0 0; }
-.mark { position: absolute; inset: 0; display: grid; place-items: center; color: var(--color-cream-100); font-size: var(--font-size-title); }
+.bottle {
+  position: relative;
+  width: var(--potion-width);
+  aspect-ratio: 1312 / 1199;
+  margin: var(--space-4) auto;
+  isolation: isolate;
+}
+/* The liquid stays inside the glass chamber, beneath the original artwork. */
+.liquidWindow {
+  position: absolute;
+  left: 26%;
+  top: 36%;
+  width: 50%;
+  height: 46%;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.liquid {
+  position: absolute;
+  inset: 38% 0 0;
+  border-radius: 50% 50% 0 0 / 4% 4% 0 0;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--liquid-color) 76%, transparent),
+    color-mix(in srgb, var(--liquid-color) 94%, transparent) 45%,
+    color-mix(in srgb, var(--liquid-color) 82%, var(--color-plum-700))
+  );
+}
+.liquid::before {
+  content: '';
+  position: absolute;
+  inset: -4% 0 auto;
+  height: 8%;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 35% 28%, var(--color-liquid-highlight), transparent 62%),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--liquid-color) 65%, var(--color-cream-100)),
+      var(--liquid-color)
+    );
+  box-shadow: inset 0 var(--border-thin) 0 var(--color-liquid-highlight);
+}
+.liquid::after {
+  content: '';
+  position: absolute;
+  inset: 0 8% 8%;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse 9% 42% at 16% 32%, var(--color-liquid-highlight), transparent),
+    radial-gradient(ellipse 32% 12% at 65% 87%, var(--color-glass), transparent);
+  opacity: 0.55;
+  animation: liquidReflection var(--motion-glow) ease-in-out infinite alternate;
+}
+@keyframes liquidReflection { to { opacity: 0.85; } }
+.shell { position: relative; width: 100%; height: auto; pointer-events: none; user-select: none; }

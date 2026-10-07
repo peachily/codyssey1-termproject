@@ -2,11 +2,12 @@
   position: absolute;
   left: 50%;
   top: 58.7%;
-  width: 16.75%;
+  width: 13.5%;
   aspect-ratio: 879 / 1242;
   transform: translate(-50%, -100%);
   z-index: var(--layer-character);
   pointer-events: none;
+  animation: arrive var(--motion-reveal) var(--motion-owl-delay) both;
 }
 /* Visible body bounds: x 97..975, y 87..1328 in the original canvas. */
 .owl img {
@@ -21,5 +22,7 @@
 }
 @keyframes breathe {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.004); }
+  50% { transform: scale(var(--breath-scale)); }
 }
+
+@keyframes arrive { from { opacity: 0; } to { opacity: 1; } }

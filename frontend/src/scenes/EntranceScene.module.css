@@ -23,24 +23,6 @@
   white-space: nowrap;
 }
 
-.status {
-  position: absolute;
-  bottom: max(var(--space-4), env(safe-area-inset-bottom));
-  left: 50%;
-  z-index: var(--layer-controls);
-  width: max-content;
-  max-width: calc(100% - var(--space-8));
-  margin: 0;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-small);
-  transform: translateX(-50%);
-  background-color: var(--color-overlay);
-  color: var(--color-cream-100);
-  font-size: var(--font-size-small);
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-
 .auth {
   position: absolute;
   inset: 0;
@@ -48,8 +30,9 @@
   display: flex;
   justify-content: center;
   align-items: safe center;
+  padding-top: max(36svh, var(--space-12));
   overflow-y: auto;
-  padding: var(--space-12) var(--space-4);
+  padding-inline: var(--space-4);
   padding-bottom: calc(var(--space-12) + env(safe-area-inset-bottom));
 }
 
@@ -59,26 +42,14 @@
   min-height: var(--control-height);
   border: var(--border-thin) solid var(--color-plum-500);
   border-radius: var(--radius-small);
-  background: var(--color-night-900);
+  background: var(--color-input-surface);
 }
 
 
-.entering {
-  transform-origin: 50% 56%;
-  animation: enterShop var(--motion-scene) var(--motion-ease) forwards;
-}
-.fade {
-  position: absolute;
-  inset: 0;
-  z-index: var(--layer-overlay);
-  background: var(--color-plum-700);
-  animation: coverScene var(--motion-scene) var(--motion-ease) forwards;
-}
-@keyframes enterShop {
-  from { transform: scale(1); }
-  to { transform: scale(1.18); }
-}
-@keyframes coverScene {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+.leaving { pointer-events: none; animation: leaveForm var(--motion-normal) ease-out forwards; }
+.entering { transform-origin: 50% 56%; animation: enterShop var(--motion-scene) ease-in-out forwards; }
+.fade { position: absolute; inset: 0; z-index: var(--layer-overlay); background: var(--color-night-950); animation: coverScene var(--motion-scene) ease-in-out forwards; }
+@keyframes leaveForm { to { opacity: 0; } }
+@keyframes enterShop { 0%, 28% { transform: scale(1); } 100% { transform: scale(1.18); } }
+@keyframes coverScene { 0%, 55% { opacity: 0; } 100% { opacity: 1; } }
+@media (max-height: 600px) { .auth { padding-top: var(--space-4); } }

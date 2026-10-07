@@ -1,3 +1,4 @@
+import bottle from '../../assets/potions/potion-bottle.webp'
 import styles from './PotionBottle.module.css'
 
 const colors = {
@@ -11,8 +12,7 @@ const colors = {
 export default function PotionBottle({ color }) {
   if (!Object.hasOwn(colors, color)) return null
   return <div className={styles.bottle} role="img" aria-label="마법약 병" style={{ '--liquid-color': colors[color] }}>
-    <div className={styles.stopper} />
-    <div className={styles.neck} />
-    <div className={styles.glass}><div className={styles.liquid} /><span className={styles.mark} aria-hidden="true">☾</span></div>
+    <div className={styles.liquidWindow} aria-hidden="true"><div className={styles.liquid} /></div>
+    <img className={styles.shell} src={bottle} alt="" width="1312" height="1199" draggable="false" />
   </div>
 }
