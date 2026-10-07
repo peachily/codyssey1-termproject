@@ -23,7 +23,7 @@ export default function ChatInput({ onSend, pending = false }) {
     setDraft('')
     sending.current = true
     try {
-      await onSend(message)
+      if (!await onSend(message)) setDraft(draft)
     } finally {
       sending.current = false
       if (document.activeElement === document.body || document.activeElement === inputRef.current) inputRef.current?.focus()
@@ -32,7 +32,7 @@ export default function ChatInput({ onSend, pending = false }) {
 
   return <form className={styles.form} onSubmit={submit} aria-busy={pending}>
     <label htmlFor={id}>오늘은 어떤 마음인가요?</label>
-    <textarea id={id} ref={inputRef} value={draft} rows={2} readOnly={pending}
+    <textarea id={id} ref={inputRef} value={draft} rows={2} disabled={pending}
       aria-describedby={`${id}-error`} enterKeyHint="send"
       onChange={(event) => { setDraft(event.target.value); setError('') }}
       onCompositionStart={() => { composing.current = true }}
