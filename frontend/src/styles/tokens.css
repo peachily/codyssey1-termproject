@@ -1,12 +1,10 @@
 :root {
   --color-night-950: #181522;
-  --color-night-900: #211c2d;
   --color-plum-700: #493d58;
   --color-plum-500: #766584;
   --color-cream-100: #eee8dc;
   --color-cream-200: #ddd4c4;
   --color-lamp: #d8bc72;
-  --color-lamp-soft: #bca66b;
   --color-error: #c98585;
   --color-auth-surface: rgb(20 24 40 / 52%);
   --color-input-surface: rgb(23 19 31 / 42%);
@@ -53,7 +51,6 @@
 
   --radius-small: 6px;
   --radius-medium: 12px;
-  --shadow-paper: 0 4px 16px rgb(23 19 31 / 12%);
 
   --font-body: 'Pretendard Variable', Pretendard, -apple-system,
     BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
@@ -71,7 +68,6 @@
   --motion-dust: 18s;
   --dust-size: 2px;
 
-  --motion-fast: 160ms;
   --motion-normal: 280ms;
   --motion-scene: 1000ms;
   --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);

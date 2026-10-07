@@ -5,7 +5,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --motion-fast: 0ms;
     --motion-normal: 0ms;
     --motion-scene: 0ms;
   }

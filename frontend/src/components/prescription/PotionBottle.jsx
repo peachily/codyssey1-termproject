@@ -1,4 +1,4 @@
-import bottle from '../../assets/potions/potion-bottle.png'
+import bottle from '../../assets/potions/potion-bottle.webp'
 import styles from './PotionBottle.module.css'
 
 const colors = {

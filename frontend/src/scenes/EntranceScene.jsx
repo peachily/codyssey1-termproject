@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import AuthPanel from '../components/auth/AuthPanel.jsx'
 import SceneCanvas from '../components/scene/SceneCanvas.jsx'
-import shopExterior from '../assets/backgrounds/shop-exterior.png'
+import shopExterior from '../assets/backgrounds/shop-exterior.webp'
 import styles from './EntranceScene.module.css'
 
 export default function EntranceScene({ auth, entering = false, onEntered }) {

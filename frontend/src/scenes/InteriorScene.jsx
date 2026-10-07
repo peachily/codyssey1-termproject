@@ -9,7 +9,7 @@ import Owl from '../components/owl/Owl.jsx'
 import AmbientGlow from '../components/scene/AmbientGlow.jsx'
 import DustParticles from '../components/scene/DustParticles.jsx'
 import SceneCanvas from '../components/scene/SceneCanvas.jsx'
-import shopInterior from '../assets/backgrounds/shop-interior.png'
+import shopInterior from '../assets/backgrounds/shop-interior.webp'
 import styles from './InteriorScene.module.css'
 
 export default function InteriorScene({ auth }) {

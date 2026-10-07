@@ -19,7 +19,6 @@ export default function useChat(onExpired) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
   const active = useRef(null)
-  const sequence = useRef(0)
 
   useEffect(() => () => { active.current?.abort(); active.current = null }, [])
 
@@ -32,14 +31,13 @@ export default function useChat(onExpired) {
     }
     const controller = new AbortController()
     active.current = controller
-    const id = `question-${++sequence.current}`
-    setMessage({ id, role: 'user', content: message })
+    setMessage({ role: 'user', content: message })
     setPending(true)
     setError('')
     try {
       const reply = await sendChat(message, controller.signal)
       if (controller.signal.aborted) return false
-      setMessage({ id: `answer-${reply.id}`, role: 'assistant', content: reply.answer })
+      setMessage({ role: 'assistant', content: reply.answer })
       setHasSuccessfulChat(true)
       return true
     } catch (failure) {

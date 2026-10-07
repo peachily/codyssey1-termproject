@@ -1,4 +1,4 @@
-import owl from '../../assets/owl/owl-open.png'
+import owl from '../../assets/owl/owl-open.webp'
 import styles from './Owl.module.css'
 
 export default function Owl() {
