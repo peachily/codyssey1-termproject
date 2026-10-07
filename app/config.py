@@ -18,6 +18,15 @@ class AISettings:
     timeout: float
 
 
+@dataclass(frozen=True)
+class SessionSettings:
+    """세션 설정 보관"""
+
+    # 객체 출력에서 세션 비밀값 숨김
+    secret_key: str = field(repr=False)
+    https_only: bool = False
+
+
 def _read(name: str) -> str:
     return (os.getenv(name) or "").strip()
 
@@ -44,6 +53,19 @@ def get_ai_settings() -> AISettings:
         model=_read("AI_MODEL") or DEFAULT_AI_MODEL,
         timeout=_read_timeout(),
     )
+
+
+def get_session_settings() -> SessionSettings:
+    """환경 변수의 세션 비밀값 및 쿠키 설정 확인"""
+    secret_key = os.getenv("SECRET_KEY")
+    if secret_key is None or not secret_key.strip():
+        raise RuntimeError("SECRET_KEY must be set to a non-blank value")
+
+    https_only = _read("SESSION_HTTPS_ONLY").lower()
+    if https_only not in {"", "true", "false"}:
+        raise RuntimeError("SESSION_HTTPS_ONLY must be true or false")
+
+    return SessionSettings(secret_key=secret_key, https_only=https_only == "true")
 
 
 def configure_logging() -> None:

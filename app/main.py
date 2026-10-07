@@ -6,14 +6,15 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from starlette.datastructures import Headers
 from starlette.exceptions import HTTPException
+from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 from starlette.types import Scope
 
 from app import models  # noqa: F401  (registers the tables before initialization)
-from app.config import configure_logging
+from app.config import configure_logging, get_session_settings
 from app.database import engine, initialize_database
-from app.routers import chat
+from app.routers import auth, chat
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,17 @@ async def lifespan(app: FastAPI):
     engine.dispose()
 
 
+session_settings = get_session_settings()
 app = FastAPI(lifespan=lifespan)
+
+# 세션 쿠키 서명 및 14일 유지
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=session_settings.secret_key,
+    max_age=14 * 24 * 60 * 60,
+    same_site="lax",
+    https_only=session_settings.https_only,
+)
 
 
 @app.middleware("http")
@@ -69,6 +80,7 @@ def health():
 
 
 # API routers are registered above the frontend mount so they take precedence.
+app.include_router(auth.router)
 app.include_router(chat.router)
 
 frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"

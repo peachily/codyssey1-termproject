@@ -1,0 +1,4 @@
+.result { width: 100%; margin: auto; padding: var(--space-2); }
+.paper { padding: var(--space-6); background: var(--color-cream-100); color: var(--color-night-950); border-radius: var(--radius-small); box-shadow: var(--shadow-paper); }
+.paper h2 { font-family: var(--font-display); font-size: var(--font-size-heading); margin-bottom: var(--space-4); }
+.paper p { font-family: var(--font-display); white-space: pre-wrap; overflow-wrap: anywhere; }

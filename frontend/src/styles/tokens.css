@@ -1,0 +1,71 @@
+:root {
+  --color-night-950: #181522;
+  --color-night-900: #211c2d;
+  --color-plum-700: #493d58;
+  --color-plum-500: #766584;
+  --color-cream-100: #eee8dc;
+  --color-cream-200: #ddd4c4;
+  --color-lamp: #d8bc72;
+  --color-lamp-soft: #bca66b;
+  --color-error: #c98585;
+  --color-overlay: rgb(23 19 31 / 56%);
+
+  --potion-width: clamp(5rem, 12vw, 8rem);
+  --color-glass: rgb(238 232 220 / 12%);
+
+  --potion-blue: #718da6;
+  --potion-purple: #927da1;
+  --potion-pink: #c79aa8;
+  --potion-green: #829f8c;
+  --potion-yellow: #d1b974;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  --width-dialogue: 42rem;
+  --width-auth-panel: 24rem;
+  --control-height: 2.75rem;
+  --border-thin: 1px;
+  --opacity-disabled: 0.6;
+  --font-size-heading: 1.5rem;
+
+  --radius-small: 6px;
+  --radius-medium: 12px;
+  --shadow-paper: 0 4px 16px rgb(23 19 31 / 12%);
+
+  --font-body: 'Pretendard Variable', Pretendard, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  --font-display: 'Gowun Batang', 'Noto Serif KR', Batang, serif;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-size-small: 0.875rem;
+  --font-size-body: 1rem;
+  --font-size-title: 2rem;
+  --line-height-body: 1.6;
+  --line-height-title: 1.3;
+
+  --motion-breath: 6s;
+  --motion-glow: 8s;
+  --motion-dust: 18s;
+  --dust-size: 2px;
+
+  --motion-fast: 160ms;
+  --motion-normal: 280ms;
+  --motion-scene: 1000ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --layer-background: 0;
+  --layer-ambient: 10;
+  --layer-character: 20;
+  --layer-dialogue: 30;
+  --layer-controls: 40;
+  --layer-overlay: 50;
+
+  --focus-width: 2px;
+  --focus-offset: var(--space-1);
+}
