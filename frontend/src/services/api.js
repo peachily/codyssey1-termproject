@@ -50,3 +50,20 @@ export async function sendChat(message, signal) {
   }
   return data
 }
+
+export async function requestPrescription(signal) {
+  const response = await fetch('/api/prescription', {
+    method: 'POST', credentials: 'include', signal,
+    headers: { Accept: 'application/json' },
+  })
+  if (!response.ok) throw new ApiError(response.status, 'Prescription request failed')
+  let data
+  try { data = await response.json() } catch { throw new ApiError(response.status, 'Invalid prescription response') }
+  const pairs = { ANXIETY: 'BLUE', SADNESS: 'PURPLE', LONELINESS: 'PINK', STRESS: 'GREEN', EXHAUSTION: 'YELLOW' }
+  if (response.status !== 200 || !data || typeof data.keyword !== 'string' ||
+      typeof data.color !== 'string' || !Object.hasOwn(pairs, data.keyword) ||
+      pairs[data.keyword] !== data.color || typeof data.message !== 'string' || !data.message.trim()) {
+    throw new ApiError(response.status, 'Invalid prescription response')
+  }
+  return { keyword: data.keyword, color: data.color, message: data.message }
+}

@@ -1,0 +1,6 @@
+.bottle { position: relative; width: var(--potion-width); height: calc(var(--potion-width) * 1.35); margin: var(--space-4) auto; }
+.stopper { position: absolute; width: 24%; height: 12%; left: 38%; top: 0; border-radius: var(--radius-small); background: var(--color-lamp-soft); }
+.neck { position: absolute; width: 28%; height: 25%; left: 36%; top: 10%; border: var(--border-thin) solid var(--color-cream-200); background: var(--color-glass); }
+.glass { position: absolute; inset: 29% 0 0; border: var(--border-thin) solid var(--color-cream-200); border-radius: 42% 42% 30% 30%; overflow: hidden; background: var(--color-glass); }
+.liquid { position: absolute; inset: 32% 0 0; background: var(--liquid-color); opacity: 0.8; border-radius: 45% 45% 0 0 / 10% 10% 0 0; }
+.mark { position: absolute; inset: 0; display: grid; place-items: center; color: var(--color-cream-100); font-size: var(--font-size-title); }
