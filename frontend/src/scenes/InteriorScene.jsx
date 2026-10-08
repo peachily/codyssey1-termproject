@@ -23,6 +23,11 @@ export default function InteriorScene({ auth }) {
   useEffect(() => { titleRef.current?.focus() }, [])
   useEffect(() => { if (replyRef.current) replyRef.current.scrollTop = 0 }, [chat.message])
 
+  function returnToConversation() {
+    prescription.dismiss()
+    requestAnimationFrame(() => titleRef.current?.focus())
+  }
+
   async function sendMessage(message) {
     if (requestLock.current || busy || prescription.result) return false
     requestLock.current = true
@@ -40,9 +45,10 @@ export default function InteriorScene({ auth }) {
       <AmbientGlow /><DustParticles />
       {!prescription.result && <Owl />}
     </SceneCanvas>
-    {prescription.result ? <div className={styles.prescriptionView}>
-      <PrescriptionResult result={prescription.result} onExit={auth.logout} exiting={auth.pending} error={auth.error} />
-    </div> : <>
+    {prescription.result && <div className={styles.prescriptionView}>
+      <PrescriptionResult result={prescription.result} onReturn={returnToConversation} />
+    </div>}
+    <div hidden={Boolean(prescription.result)}>
       <header className={styles.controls}>
         <h1 ref={titleRef} tabIndex={-1} className={styles.title}>
           {auth.user.username}님, 약방에 잘 오셨어요.
@@ -68,6 +74,6 @@ export default function InteriorScene({ auth }) {
         </div>
         <ChatInput pending={busy} onSend={sendMessage} />
       </section>
-    </>}
+    </div>
   </main>
 }

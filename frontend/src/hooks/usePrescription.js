@@ -38,5 +38,6 @@ export default function usePrescription(onExpired) {
       if (active.current === controller) { active.current = null; setPending(false) }
     }
   }, [onExpired, result])
-  return { result, pending, error, request }
+  const dismiss = useCallback(() => { setResult(null); setError('') }, [])
+  return { result, pending, error, request, dismiss }
 }
