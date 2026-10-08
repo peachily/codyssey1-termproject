@@ -1,56 +1,111 @@
-# 데이터베이스 구조 및 확인 방법
+# 데이터베이스 구조 및 기록 검증
+
+사용자·대화 저장 구조와 읽기 전용 확인 방법을 정리합니다.
 
 ## ERD
 
-![KKAMURUK ERD](diagrams/kkamuruk-erd.png)
-
-<!-- TODO: 최종 ERD 이미지 교체 -->
-
-## 테이블 관계
-
-`users.id` (1) → `chats.user_id` (N)
-
-SQLite에 사용자와 일반 대화 Q/A를 저장합니다. 각 대화는 한 사용자에 속하며 최종 마법약 처방은 저장 대상이 아닙니다.
-
-## users
-
-| 필드 | SQLite 선언 타입 | 제약조건·의미 |
-| --- | --- | --- |
-| id | INTEGER | 기본키, 필수, DB에서 식별자 생성 |
-| username | VARCHAR | 필수, UNIQUE |
-| password_hash | VARCHAR | 필수, 비밀번호 해시 |
-| created_at | DATETIME | 필수, ORM 삽입 시 UTC 현재 시각 기본값 |
-
-## chats
-
-| 필드 | SQLite 선언 타입 | 제약조건·의미 |
-| --- | --- | --- |
-| id | INTEGER | 기본키, 필수, DB에서 식별자 생성 |
-| user_id | INTEGER | 필수, users.id 외래키, ON DELETE RESTRICT |
-| question | TEXT | 필수, 검증 완료된 사용자 질문 |
-| answer | TEXT | 필수, 정상적으로 수신한 AI 응답 |
-| created_at | DATETIME | 필수, ORM 삽입 시 UTC 현재 시각 기본값 |
-
-## 저장 및 조회
-
-생성 시각은 UTC로 저장합니다. 사용자 이름은 중복될 수 없으며 대화의 사용자 ID에는 외래키 제약을 적용합니다. 대화가 남아 있는 사용자의 삭제는 제한됩니다.
-
-대화 조회에는 `(user_id, created_at, id)` 복합 인덱스를 사용합니다. 전체 기록은 최신순으로, 문맥용 최근 최대 5개 Q/A는 시간순으로 반환합니다. 저장 실패 시 트랜잭션을 rollback하고 성공·실패 이벤트를 로그로 남깁니다.
-
-## DB 저장 내용 확인
-
-읽기 전용 확인 도구로 사용자별 질문·응답·생성 시각을 조회합니다. 사용자 ID를 지정하며 기본 조회 건수는 최근 20개입니다. 비밀번호 해시는 출력하지 않습니다.
-
-```sh
-python scripts/check_db.py --database ./chatbot.db --user-id 1
+```mermaid
+erDiagram
+    direction LR
+    users ||--o{ chats : "대화 소유"
+    users {
+        INTEGER id PK
+        VARCHAR username UK
+        VARCHAR password_hash
+        DATETIME created_at
+    }
+    chats {
+        INTEGER id PK
+        INTEGER user_id FK
+        TEXT question
+        TEXT answer
+        DATETIME created_at
+    }
 ```
 
-Railway Volume의 DB 파일에 접근할 수 있는 환경에서는 다음 명령을 사용합니다.
+## 테이블과 제약조건
+
+| 항목 | 기준 |
+| --- | --- |
+| 전체 컬럼 | NOT NULL |
+| users.id / chats.id | 자동 생성 PK |
+| users.username | UNIQUE |
+| users.password_hash | Argon2 해시. 평문 미저장 |
+| chats.user_id | FK → users.id, 삭제 RESTRICT |
+| chats.question / answer | 검증된 질문·정상 AI 답변 |
+| created_at | UTC 저장, API는 `Z`, 화면은 Asia/Seoul |
+| 복합 인덱스 | `ix_chats_user_created_id (user_id, created_at, id)` |
+| SQLite 연결 | foreign_keys ON, busy_timeout 5000ms |
+| 처방·물약 색상 | 저장하지 않음 |
+
+구현: `app/models.py`, `app/database.py`, `app/services/chats.py`.
+
+## 저장·조회 순서
+
+| 함수 | 동작 |
+| --- | --- |
+| `save_chat` | flush → commit → 성공 로그. 실패 시 rollback·ChatSaveError |
+| `list_user_chats` | 본인 전체 기록, 최신순 |
+| `get_recent_chats` | 본인 최신 5개 선택 → 시간순 반환 |
+
+- 전체 대화는 누적 저장. 최근 5개 제한은 AI 문맥에만 적용.
+- 시각 동률은 id로 정렬. AI 호출 전 읽기 트랜잭션 종료.
+
+## 사용자별 기록 조회 SQL
+
+**준비:** 테스트 계정으로 가입·대화 후, 저장소 루트에서 실행합니다. SQLite CLI가 필요합니다.
 
 ```sh
-python scripts/check_db.py --database /data/chatbot.db --user-id 1
+sqlite3 -readonly ./chatbot.db
 ```
 
-[확인용 SQL](../scripts/check_logs.sql)로 테이블 구조와 사용자별 대화, 최근 대화 조회 계획을 확인할 수도 있습니다.
+- DB 경로: 로컬 기본 `./chatbot.db`, Railway Volume `/data/chatbot.db`.
+- 아래 `sample_user`와 `user_id = 1`은 테스트 계정의 실제 값으로 변경.
 
-<!-- TODO: 테스트 계정 DB 조회 결과 증빙 -->
+```sql
+-- 사용자 ID 확인
+SELECT id, username FROM users WHERE username = 'sample_user';
+
+-- 본인 최근 20개 기록과 한국 시간
+SELECT id, user_id, question, answer, created_at AS utc,
+       datetime(created_at, '+9 hours') AS kst
+FROM chats WHERE user_id = 1
+ORDER BY created_at DESC, id DESC LIMIT 20;
+
+-- 사용자별 대화 건수 (기록이 없으면 0)
+SELECT u.id AS user_id, COUNT(c.id) AS chat_count
+FROM users u LEFT JOIN chats c ON c.user_id = u.id
+GROUP BY u.id ORDER BY u.id;
+
+-- 한국 날짜별 건수
+SELECT date(created_at, '+9 hours') AS date_kst, COUNT(*) AS chat_count
+FROM chats WHERE user_id = 1
+GROUP BY date_kst ORDER BY date_kst DESC;
+```
+
+**확인:** 사용자별 분리, 질문·답변·시각, 최신순 정렬. 종료는 `.quit`.
+
+## 기존 검증 도구
+
+저장소 루트에서 실행합니다. Python 도구는 표준 라이브러리만 사용하며 DB를 읽기 전용으로 엽니다.
+
+```sh
+python scripts/check_db.py --database ./chatbot.db --user-id 1 --limit 20
+sqlite3 -readonly ./chatbot.db ".read scripts/check_logs.sql"
+```
+
+| 도구 | 인자·확인 결과 |
+| --- | --- |
+| `check_db.py` | database·user-id 필수, limit 기본 20. JSON 기록 반환, 없으면 `[]` |
+| `check_logs.sql` | 스키마·인덱스·사용자 1 기록·쿼리 계획. 다른 사용자는 파일의 두 `user_id = 1` 변경 |
+
+## 오류 점검
+
+| 증상 | 확인 |
+| --- | --- |
+| 파일 열기 실패 | DB 경로·읽기 권한 |
+| no such table | 서버 초기화 여부·다른 DB 파일 여부 |
+| 빈 결과 | 사용자 ID·정상 대화 저장 여부 |
+| 인자 오류 | user-id·limit 양수 여부 |
+
+검증: 별도 테스트 DB에서 사용자 2명·대화 3개 생성 → 본인 기록 2개·최신순·인덱스 사용 확인. [자동화 테스트](TESTING.md)에서도 검증합니다.
