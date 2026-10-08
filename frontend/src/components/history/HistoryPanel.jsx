@@ -17,6 +17,7 @@ export default function HistoryPanel({ revision, onExpired }) {
   const [reading, setReading] = useState(false)
   const title = useId()
   const history = useHistory(open, revision, onExpired)
+  const showRecords = reading && !history.pending && !history.error
   const groups = useMemo(() => groupChats(history.chats), [history.chats])
 
   useEffect(() => {
@@ -33,8 +34,8 @@ export default function HistoryPanel({ revision, onExpired }) {
   }, [open])
 
   useEffect(() => {
-    if (reading) titleRef.current?.focus()
-  }, [reading])
+    if (showRecords) titleRef.current?.focus()
+  }, [showRecords])
 
   function selectDay(date) {
     setSelected(date)
@@ -65,7 +66,7 @@ export default function HistoryPanel({ revision, onExpired }) {
         <h2 id={title} ref={titleRef} tabIndex={-1}>{reading && selected ? `${historyDate(selected)}의 이야기` : '지난 이야기'}</h2>
         <button type="button" onClick={close} aria-label="대화 기록 닫기" autoFocus>닫기</button>
       </header>
-      <div className={styles.content} hidden={reading}>
+      <div className={styles.content} hidden={showRecords}>
         {history.pending ? <p role="status">지난 이야기를 불러오고 있어요…</p> : history.error ? <>
           <p role="alert">{history.error}</p><button type="button" onClick={history.reload}>다시 불러오기</button>
         </> : <>
@@ -80,7 +81,7 @@ export default function HistoryPanel({ revision, onExpired }) {
           <p className={styles.note}>날짜와 시간은 한국 시간을 기준으로 표시해요.</p>
         </>}
       </div>
-      {reading && selected && <ol className={styles.messages} aria-label="이날 나눈 대화" tabIndex={0}>
+      {showRecords && selected && <ol className={styles.messages} aria-label="이날 나눈 대화" tabIndex={0}>
         {(groups.get(historyDate(selected)) || []).map(chat => <li key={chat.id} className={styles.exchange}>
           <article className={styles.question} aria-label="내 이야기">
             <span className={styles.speaker}>나</span><p>{chat.question}</p>
