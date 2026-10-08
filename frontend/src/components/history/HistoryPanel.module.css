@@ -18,7 +18,6 @@
 .content { padding: var(--space-4); min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .content :global(.rdp-root) { --rdp-accent-color: var(--color-lamp); --rdp-accent-background-color: var(--color-plum-700); --rdp-day-width: 38px; --rdp-day-height: 44px; --rdp-day_button-width: 36px; --rdp-day_button-height: 40px; margin: 0 auto var(--space-4); width: fit-content; }
 .recorded { background: rgb(216 188 114 / 16%); border-radius: var(--radius-small); }
-.note { color: var(--color-cream-200); font-size: var(--font-size-small); margin-top: var(--space-2); }
 .reading { width: min(42rem, calc(100vw - 2rem)); height: min(44rem, calc(100dvh - 2rem)); }
 .messages { list-style: none; margin: 0; padding: var(--space-6); min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
 .exchange { display: flex; flex-direction: column; gap: var(--space-4); margin-bottom: var(--space-6); }
@@ -34,3 +33,5 @@
   .header h2 { font-size: 1rem; overflow-wrap: anywhere; }
   .content, .messages { padding: var(--space-4) max(var(--space-3), env(safe-area-inset-right)) calc(var(--space-6) + env(safe-area-inset-bottom)) max(var(--space-3), env(safe-area-inset-left)); }
 }
+
+.header .iconButton { display: inline-flex; align-items: center; justify-content: center; width: var(--control-height); padding: 0; border: 0; flex-shrink: 0; }

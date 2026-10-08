@@ -37,7 +37,7 @@ async function send(user, text = '오늘의 질문') {
 }
 async function openHistory(user) {
   await user.click(screen.getByRole('button', { name: '대화 기록', exact: true }))
-  await screen.findByText('은은하게 표시된 날의 이야기를 펼쳐보세요.')
+  await screen.findByRole('grid')
   return screen.getByRole('dialog')
 }
 

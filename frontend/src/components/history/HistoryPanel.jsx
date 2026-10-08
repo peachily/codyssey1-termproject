@@ -62,9 +62,9 @@ export default function HistoryPanel({ revision, onExpired }) {
     {open && createPortal(<dialog ref={dialogRef} className={`${styles.dialog} ${reading ? styles.reading : ""}`} aria-labelledby={title}
       onCancel={event => { event.preventDefault(); close() }}>
       <header className={styles.header}>
-        {reading && <button type="button" onClick={back} aria-label="날짜 선택으로 돌아가기">뒤로</button>}
+        {reading && <button className={styles.iconButton} type="button" onClick={back} aria-label="날짜 선택으로 돌아가기"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m15 5-7 7 7 7" /></svg></button>}
         <h2 id={title} ref={titleRef} tabIndex={-1}>{reading && selected ? `${historyDate(selected)}의 이야기` : '지난 이야기'}</h2>
-        <button type="button" onClick={close} aria-label="대화 기록 닫기" autoFocus>닫기</button>
+        <button className={styles.iconButton} type="button" onClick={close} aria-label="대화 기록 닫기" autoFocus><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
       </header>
       <div className={styles.content} hidden={showRecords}>
         {history.pending ? <p role="status">지난 이야기를 불러오고 있어요…</p> : history.error ? <>
@@ -75,10 +75,9 @@ export default function HistoryPanel({ revision, onExpired }) {
             modifiers={{ recorded: date => groups.has(historyDate(date)) }}
             modifiersClassNames={{ recorded: styles.recorded }}
             labels={{ labelPrevious: () => '이전 달', labelNext: () => '다음 달' }} />
-          <p role="status">{selected
-            ? groups.has(historyDate(selected)) ? '이날 나눈 이야기가 있어요.' : '이날은 남겨진 이야기가 없어요.'
-            : history.chats.length ? '은은하게 표시된 날의 이야기를 펼쳐보세요.' : '아직 남겨진 이야기가 없어요.'}</p>
-          <p className={styles.note}>날짜와 시간은 한국 시간을 기준으로 표시해요.</p>
+          {!history.chats.length && <p role="status">아직 남겨진 이야기가 없어요.</p>}
+          {selected && history.chats.length > 0 && !groups.has(historyDate(selected)) &&
+            <p role="status">이날은 남겨진 이야기가 없어요.</p>}
         </>}
       </div>
       {showRecords && selected && <ol className={styles.messages} aria-label="이날 나눈 대화" tabIndex={0}>
