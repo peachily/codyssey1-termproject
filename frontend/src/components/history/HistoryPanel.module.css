@@ -1,0 +1,21 @@
+.dialog {
+  width: min(30rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--color-plum-500);
+  border-radius: var(--radius-medium);
+  background: var(--color-night-950);
+  color: var(--color-cream-100);
+  overflow: hidden;
+}
+.dialog::backdrop { background: var(--color-overlay); backdrop-filter: blur(4px); }
+.dialog[open] { display: flex; flex-direction: column; }
+.header { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border-bottom: 1px solid var(--color-plum-700); flex-shrink: 0; }
+.header h2 { flex: 1; min-width: 0; font-family: var(--font-display); font-size: 1.15rem; }
+.dialog button { min-height: var(--control-height); cursor: pointer; }
+.header button, .content > button { background: transparent; color: inherit; border: 1px solid var(--color-plum-500); border-radius: var(--radius-small); padding: var(--space-2) var(--space-3); }
+.content { padding: var(--space-4); min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.content :global(.rdp-root) { --rdp-accent-color: var(--color-lamp); --rdp-accent-background-color: var(--color-plum-700); --rdp-day-width: 38px; --rdp-day-height: 44px; --rdp-day_button-width: 36px; --rdp-day_button-height: 40px; margin: 0 auto var(--space-4); width: fit-content; }
+.recorded { background: rgb(216 188 114 / 16%); border-radius: var(--radius-small); }
+.note { color: var(--color-cream-200); font-size: var(--font-size-small); margin-top: var(--space-2); }

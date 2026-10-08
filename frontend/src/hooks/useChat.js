@@ -15,6 +15,7 @@ function describeError(error) {
 
 export default function useChat(onExpired) {
   const [message, setMessage] = useState(null)
+  const [lastChatId, setLastChatId] = useState(null)
   const [hasSuccessfulChat, setHasSuccessfulChat] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
@@ -39,6 +40,7 @@ export default function useChat(onExpired) {
       if (controller.signal.aborted) return false
       setMessage({ role: 'assistant', content: reply.answer })
       setHasSuccessfulChat(true)
+      setLastChatId(reply.id)
       return true
     } catch (failure) {
       if (controller.signal.aborted) return false
@@ -54,5 +56,5 @@ export default function useChat(onExpired) {
     }
   }, [onExpired])
 
-  return { message, hasSuccessfulChat, pending, error, send }
+  return { message, lastChatId, hasSuccessfulChat, pending, error, send }
 }

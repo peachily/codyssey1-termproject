@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import HistoryPanel from '../components/history/HistoryPanel.jsx'
 import usePrescription from '../hooks/usePrescription.js'
 import PrescriptionResult from '../components/prescription/PrescriptionResult.jsx'
 import useChat from '../hooks/useChat.js'
@@ -47,6 +48,7 @@ export default function InteriorScene({ auth }) {
           {auth.user.username}님, 약방에 잘 오셨어요.
           <span>오늘은 까무룩 잠들 수 있도록 도와드릴게요.</span>
         </h1>
+        <HistoryPanel revision={chat.lastChatId} onExpired={auth.expire} />
         <button type="button" disabled={auth.pending} onClick={auth.logout}>{auth.pending ? '나가는 중…' : '나가기'}</button>
         {auth.error && <p role="alert">{auth.error}</p>}
       </header>
