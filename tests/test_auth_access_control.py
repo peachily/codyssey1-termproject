@@ -736,6 +736,38 @@ class AccessControlTests(unittest.TestCase):
         self.assertEqual(self.client.post("/api/chat", json={"message": "저장 복구 질문"}).status_code, 200)
         self.assertEqual(len(self.read_chats()), len(before) + 1)
 
+    def test_transport_failures_return_safe_errors_and_leave_server_usable(self):
+        self.login()
+        transport = self.use_real_ai_service()
+        cases = ('timeout', 'connection', 'http_error', 'invalid_json', 'invalid_structure')
+        for failure in cases:
+            with self.subTest(failure=failure):
+                transport.reset_mock(return_value=True, side_effect=True)
+                transport.return_value.ok = True
+                if failure == 'timeout':
+                    transport.side_effect = requests.Timeout('private-ai-error')
+                elif failure == 'connection':
+                    transport.side_effect = requests.ConnectionError('private-ai-error')
+                elif failure == 'http_error':
+                    transport.return_value.ok = False
+                    transport.return_value.status_code = 503
+                elif failure == 'invalid_json':
+                    transport.return_value.json.side_effect = ValueError('private-ai-error')
+                else:
+                    transport.return_value.json.return_value = {'choices': []}
+                before = self.read_chats()
+                with self.assertLogs(level=logging.INFO) as captured:
+                    response = self.client.post('/api/chat', json={'message': '실패 질문'})
+                self.assertEqual(response.status_code, 504 if failure == 'timeout' else 502)
+                self.assertEqual(response.json(), {'detail': 'AI response timed out' if failure == 'timeout' else 'AI request failed'})
+                self.assertEqual(self.read_chats(), before)
+                self.assert_trace_logs(captured.records, '/api/chat', {
+                    'ai_call_start': 1, 'ai_call_success': 0, 'ai_call_failure': 1,
+                })
+                self.assert_safe_failure(response, captured.records)
+                self.assertEqual(self.client.get('/health').status_code, 200)
+                self.assertEqual(self.client.get('/api/me/chats').status_code, 200)
+
     def test_real_ai_success_logs_share_request_and_user_ids(self):
         """실제 AI 성공 로그의 요청·사용자 추적과 commit 이후 저장 로그 확인"""
         self.login()

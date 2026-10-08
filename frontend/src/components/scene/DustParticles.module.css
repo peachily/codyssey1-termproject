@@ -5,7 +5,7 @@
   height: var(--dust-size);
   border-radius: 50%;
   background: var(--color-cream-200);
-  opacity: 0.15;
+  opacity: var(--opacity-dust-low);
   animation: drift var(--motion-dust) ease-in-out infinite alternate;
 }
-@keyframes drift { to { transform: translate(var(--space-2), calc(-1 * var(--space-6))); opacity: 0.3; } }
+@keyframes drift { to { transform: translate(var(--space-2), calc(-1 * var(--space-6))); opacity: var(--opacity-dust-high); } }

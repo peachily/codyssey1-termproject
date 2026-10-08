@@ -14,7 +14,7 @@ from starlette.types import Scope
 from app import models  # noqa: F401  (registers the tables before initialization)
 from app.config import configure_logging, get_session_settings
 from app.database import engine, initialize_database
-from app.routers import auth, chat
+from app.routers import auth, chat, history
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +82,7 @@ def health():
 # API routers are registered above the frontend mount so they take precedence.
 app.include_router(auth.router)
 app.include_router(chat.router)
+app.include_router(history.router)
 
 frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 if (frontend_dist / "index.html").is_file():

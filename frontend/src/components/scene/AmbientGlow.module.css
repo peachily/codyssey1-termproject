@@ -3,8 +3,8 @@
   inset: 0;
   z-index: var(--layer-ambient);
   pointer-events: none;
-  background: radial-gradient(ellipse at 18% 43%, var(--color-lamp) 0%, transparent 27%), radial-gradient(ellipse at 82% 43%, var(--color-lamp) 0%, transparent 27%);
-  opacity: 0.05;
+  background: radial-gradient(ellipse at 18% 43%, var(--color-lamp) 0%, transparent 36%), radial-gradient(ellipse at 82% 43%, var(--color-lamp) 0%, transparent 36%);
+  opacity: var(--opacity-glow-low);
   animation: glow var(--motion-glow) ease-in-out infinite alternate;
 }
-@keyframes glow { to { opacity: 0.08; } }
+@keyframes glow { to { opacity: var(--opacity-glow-high); } }

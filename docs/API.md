@@ -1,125 +1,76 @@
 # API 명세
 
-## POST /api/auth/signup
+인증, 요청·응답 예시와 오류 코드를 정리합니다. 예시 데이터는 가상입니다.
 
-### 설명
+## 공통 규칙
 
-<!-- TODO: 설명 -->
+- JSON 통신, 세션 쿠키 인증. fetch는 `credentials: 'include'` 사용.
+- 조회 대상은 세션 사용자. 비밀번호·해시는 응답에서 제외.
+- 시각은 UTC ISO 8601 (`Z`), 오류는 `{"detail": "..."}`.
 
-### Request
+## API 목록
 
-<!-- TODO: 요청 -->
+| 메서드·경로 | 기능 | 인증 | 성공 | 요청 → 응답 예시 |
+| --- | --- | --- | --- | --- |
+| `POST /api/auth/signup` | 가입 | — | 201 | 인증 예시 참고 |
+| `POST /api/auth/login` | 로그인 | — | 200 | 인증 예시 참고 |
+| `POST /api/auth/logout` | 로그아웃 | — | 200 | 본문 없음 → `{"message":"logged out"}` |
+| `GET /api/auth/me` | 내 정보 | 필요 | 200 | 본문 없음 → `{"id":1,"username":"sample_user"}` |
+| `POST /api/chat` | 질문 | 필요 | 200 | 대화 예시 참고 |
+| `POST /api/prescription` | 처방 | 필요 | 200 | 본문 없음 → 처방 예시 참고 |
+| `GET /api/me/chats` | 내 전체 기록 | 필요 | 200 | 본문 없음 → 기록 예시 참고 |
+| `GET /health` | 서버 상태 | — | 200 | 본문 없음 → `{"status":"ok"}` |
 
-### Success Response
+## 입력 검증
 
-<!-- TODO: 성공 응답 -->
+| 필드 | 규칙 |
+| --- | --- |
+| username | 필수 문자열, trim 후 `^[a-z0-9_]{3,30}$` |
+| password | 필수 문자열, 원문 8~128자, 공백만 입력 금지, trim 안 함 |
+| message | 필수 문자열, trim 후 1~2000자 |
 
-### Error Response
+누락·null·잘못된 타입·범위 위반은 400입니다.
 
-<!-- TODO: 오류 응답 -->
+## 인증 예시
 
-## POST /api/auth/login
+가입·로그인 요청 (`password`는 자리표시자):
 
-### 설명
+```json
+{"username":"sample_user","password":"<사용자가 입력한 비밀번호>"}
+```
 
-<!-- TODO: 설명 -->
+응답: 가입 201 / 로그인 200. 가입만으로 로그인되지 않으며 로그인 성공 시 세션을 교체합니다.
 
-### Request
+```json
+{"id":1,"username":"sample_user"}
+```
 
-<!-- TODO: 요청 -->
+## 대화 예시
 
-### Success Response
+요청:
 
-<!-- TODO: 성공 응답 -->
+```json
+{"message":"내일 발표가 있어서 잠이 안 와요."}
+```
 
-### Error Response
-
-<!-- TODO: 오류 응답 -->
-
-## POST /api/auth/logout
-
-### 설명
-
-<!-- TODO: 설명 -->
-
-### Request
-
-<!-- TODO: 요청 -->
-
-### Success Response
-
-<!-- TODO: 성공 응답 -->
-
-### Error Response
-
-<!-- TODO: 오류 응답 -->
-
-## GET /api/auth/me
-
-### 설명
-
-<!-- TODO: 설명 -->
-
-### Request
-
-<!-- TODO: 요청 -->
-
-### Success Response
-
-<!-- TODO: 성공 응답 -->
-
-### Error Response
-
-<!-- TODO: 오류 응답 -->
-
-## POST /api/chat
-
-### 설명
-
-로그인한 사용자의 질문을 받아 AI 답변을 반환하고 대화를 저장합니다. 같은 사용자의 최근 최대 5개 Q/A를 문맥으로 함께 전달합니다. `message`는 앞뒤 공백을 제거한 뒤 1~2000자의 문자열이어야 하며, 공백을 제거한 값이 `question`으로 저장됩니다.
-
-<!-- TODO: 인증 연결 후 로그인 흐름 확인 -->
-
-### Request
+응답: 본인 최근 최대 5개 Q/A로 답변 생성 후 DB 저장.
 
 ```json
 {
-  "message": "내일 발표가 있어서 잠이 안 와요."
+  "id":1,
+  "question":"내일 발표가 있어서 잠이 안 와요.",
+  "answer":"어떤 장면이 가장 걱정되세요?",
+  "created_at":"2026-10-08T12:00:00Z"
 }
 ```
 
-### Success Response
+## 처방 예시
 
-200 OK
+최근 최대 5개 Q/A로 생성하며 처방·색상은 DB에 저장하지 않습니다.
 
 ```json
-{
-  "id": 1,
-  "question": "내일 발표가 있어서 잠이 안 와요.",
-  "answer": "내일 발표를 앞두고 마음이 많이 조여 오셨군요, 손님. 어떤 장면이 가장 자꾸 떠오르세요?",
-  "created_at": "2026-10-02T08:00:00.123456Z"
-}
+{"keyword":"ANXIETY","color":"BLUE","message":"오늘 다 해결하지 않아도 괜찮아요."}
 ```
-
-`created_at`은 UTC 기준 ISO 8601 문자열입니다.
-
-### Error Response
-
-| 상태 | detail | 조건 |
-| --- | --- | --- |
-| 400 | `Invalid message` | `message` 누락, null, 문자열이 아닌 값, 공백만 있는 값, 2000자 초과, 잘못된 JSON |
-| 401 | | 로그인되지 않은 사용자 |
-| 502 | `AI request failed` | AI 호출 실패 또는 사용할 수 없는 AI 응답 |
-| 504 | `AI response timed out` | AI 응답 시간 초과 |
-| 500 | `Failed to save chat` | 대화 저장 실패 |
-
-AI 호출이 실패하거나 시간 초과되면 대화를 저장하지 않습니다.
-
-## POST /api/prescription
-
-### 설명
-
-로그인한 사용자의 최근 최대 5개 Q/A를 바탕으로 마법약 처방을 생성합니다. AI가 상태(`keyword`)와 위로 메시지(`message`)를 만들고, 서버가 `keyword`를 검증한 뒤 정해진 `color`를 붙입니다. 처방은 저장하지 않습니다.
 
 | keyword | color |
 | --- | --- |
@@ -129,67 +80,43 @@ AI 호출이 실패하거나 시간 초과되면 대화를 저장하지 않습�
 | STRESS | GREEN |
 | EXHAUSTION | YELLOW |
 
-### Request
+- 서버가 keyword·message 검증 후 색상을 고정 매핑.
+- 처방 형식 오류만 1회 재시도. 전송 실패·timeout은 재시도하지 않음.
 
-요청 본문 없음.
+## 기록 예시
 
-### Success Response
-
-200 OK
+본인 전체 기록을 최신순(`created_at DESC, id DESC`)으로 반환합니다. pagination은 없습니다.
 
 ```json
 {
-  "keyword": "ANXIETY",
-  "color": "BLUE",
-  "message": "시험을 앞두고 잠이 오지 않을 만큼 마음이 무거우셨겠어요. 오늘 밤은 시험 걱정을 잠시 내일로 미뤄 두고, 이 밤만큼은 가만히 쉬어 가셔도 돼요."
+  "chats":[
+    {"id":1,"question":"질문","answer":"답변","created_at":"2026-10-08T12:00:00Z"}
+  ]
 }
 ```
 
-### Error Response
+기록이 없으면 `{"chats":[]}`입니다.
 
-| 상태 | detail | 조건 |
+## 오류 응답
+
+| 대상 | 상태 | detail |
 | --- | --- | --- |
-| 400 | `No chats to prescribe` | 처방에 사용할 대화 기록 없음 |
-| 401 | | 로그인되지 않은 사용자 |
-| 502 | `AI request failed` | AI 호출 실패, 허용되지 않은 `keyword`, 빈 `message`, 해석할 수 없는 형식 |
-| 504 | `AI response timed out` | AI 응답 시간 초과 |
+| 가입·로그인 입력 | 400 | `Invalid username or password` |
+| 가입 중복 / 저장 실패 | 409 / 500 | `Username already exists` / `Failed to save user` |
+| 로그인 실패 | 401 | `Invalid username or password` |
+| 보호 API 미인증 | 401 | `Not authenticated` |
+| 로그인·보호 API 사용자 조회 실패 | 500 | `Failed to retrieve user` |
+| 질문 입력 / 저장 실패 | 400 / 500 | `Invalid message` / `Failed to save chat` |
+| 처방용 대화 없음 | 400 | `No chats to prescribe` |
+| 기록 조회 실패 | 500 | `Failed to retrieve chats` |
+| 대화·처방 AI 실패 / timeout | 502 / 504 | `AI request failed` / `AI response timed out` |
 
-## GET /api/me/chats
-
-### 설명
-
-<!-- TODO: 설명 -->
-
-### Request
-
-<!-- TODO: 요청 -->
-
-### Success Response
-
-<!-- TODO: 성공 응답 -->
-
-### Error Response
-
-<!-- TODO: 오류 응답 -->
-
-## GET /health
-
-### 설명
-
-인증 없이 서버 상태를 확인합니다.
-
-### Request
-
-요청 본문 없음.
-
-### Success Response
-
-200 OK
+504 응답 예시:
 
 ```json
-{"status": "ok"}
+{"detail":"AI response timed out"}
 ```
 
-### Error Response
-
-별도의 도메인 오류 응답은 없습니다.
+- AI 실패: 대화 미저장. DB 저장 실패: rollback 후 오류 응답.
+- 현재 대화·처방의 최근 기록 SELECT 오류에는 별도 `detail` 변환이 없음.
+- 사용자 안내 문구: [오류 처리](DEPLOYMENT.md#오류-처리와-점검).

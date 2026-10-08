@@ -65,7 +65,7 @@ export default function useAuth() {
       if (kind === 'signup') {
         await api.signup(credentials, controller.signal)
         if (controller.signal.aborted) return false
-        setNotice('가입이 완료됐어요. 로그인하고 약방에 들어와주세요.')
+        setNotice('가입이 완료됐어요.')
       } else if (kind === 'login') {
         const user = await api.login(credentials, controller.signal)
         if (controller.signal.aborted) return false
