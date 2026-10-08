@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import HistoryPanel from '../components/history/HistoryPanel.jsx'
 import usePrescription from '../hooks/usePrescription.js'
 import PrescriptionResult from '../components/prescription/PrescriptionResult.jsx'
 import useChat from '../hooks/useChat.js'
@@ -22,6 +23,11 @@ export default function InteriorScene({ auth }) {
   useEffect(() => { titleRef.current?.focus() }, [])
   useEffect(() => { if (replyRef.current) replyRef.current.scrollTop = 0 }, [chat.message])
 
+  function returnToConversation() {
+    prescription.dismiss()
+    requestAnimationFrame(() => titleRef.current?.focus())
+  }
+
   async function sendMessage(message) {
     if (requestLock.current || busy || prescription.result) return false
     requestLock.current = true
@@ -39,14 +45,16 @@ export default function InteriorScene({ auth }) {
       <AmbientGlow /><DustParticles />
       {!prescription.result && <Owl />}
     </SceneCanvas>
-    {prescription.result ? <div className={styles.prescriptionView}>
-      <PrescriptionResult result={prescription.result} onExit={auth.logout} exiting={auth.pending} error={auth.error} />
-    </div> : <>
+    {prescription.result && <div className={styles.prescriptionView}>
+      <PrescriptionResult result={prescription.result} onReturn={returnToConversation} />
+    </div>}
+    <div hidden={Boolean(prescription.result)}>
       <header className={styles.controls}>
         <h1 ref={titleRef} tabIndex={-1} className={styles.title}>
           {auth.user.username}님, 약방에 잘 오셨어요.
           <span>오늘은 까무룩 잠들 수 있도록 도와드릴게요.</span>
         </h1>
+        <HistoryPanel revision={chat.lastChatId} onExpired={auth.expire} />
         <button type="button" disabled={auth.pending} onClick={auth.logout}>{auth.pending ? '나가는 중…' : '나가기'}</button>
         {auth.error && <p role="alert">{auth.error}</p>}
       </header>
@@ -66,6 +74,6 @@ export default function InteriorScene({ auth }) {
         </div>
         <ChatInput pending={busy} onSend={sendMessage} />
       </section>
-    </>}
+    </div>
   </main>
 }

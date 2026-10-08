@@ -15,10 +15,12 @@ function describeError(error) {
 
 export default function useChat(onExpired) {
   const [message, setMessage] = useState(null)
+  const [lastChatId, setLastChatId] = useState(null)
   const [hasSuccessfulChat, setHasSuccessfulChat] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
   const active = useRef(null)
+  const messageRef = useRef(null)
 
   useEffect(() => () => { active.current?.abort(); active.current = null }, [])
 
@@ -29,6 +31,7 @@ export default function useChat(onExpired) {
       setError('이야기를 1~2000자로 입력해주세요.')
       return false
     }
+    const previousMessage = messageRef.current
     const controller = new AbortController()
     active.current = controller
     setMessage({ role: 'user', content: message })
@@ -37,12 +40,14 @@ export default function useChat(onExpired) {
     try {
       const reply = await sendChat(message, controller.signal)
       if (controller.signal.aborted) return false
-      setMessage({ role: 'assistant', content: reply.answer })
+      messageRef.current = { role: 'assistant', content: reply.answer }
+      setMessage(messageRef.current)
       setHasSuccessfulChat(true)
+      setLastChatId(reply.id)
       return true
     } catch (failure) {
       if (controller.signal.aborted) return false
-      setMessage(null)
+      setMessage(previousMessage)
       setError(describeError(failure))
       if (failure.status === 401) onExpired()
       return false
@@ -54,5 +59,5 @@ export default function useChat(onExpired) {
     }
   }, [onExpired])
 
-  return { message, hasSuccessfulChat, pending, error, send }
+  return { message, lastChatId, hasSuccessfulChat, pending, error, send }
 }

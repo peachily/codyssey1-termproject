@@ -67,3 +67,19 @@ export async function requestPrescription(signal) {
   }
   return { keyword: data.keyword, color: data.color, message: data.message }
 }
+
+export async function getChats(signal) {
+  const response = await fetch('/api/me/chats', {
+    credentials: 'include', signal, headers: { Accept: 'application/json' },
+  })
+  if (!response.ok) throw new ApiError(response.status, 'History request failed')
+  let data
+  try { data = await response.json() } catch { throw new ApiError(response.status, 'Invalid history response') }
+  if (response.status !== 200 || !Array.isArray(data?.chats) || data.chats.some(chat =>
+    !Number.isSafeInteger(chat?.id) || chat.id <= 0 || typeof chat.question !== 'string' ||
+    typeof chat.answer !== 'string' || typeof chat.created_at !== 'string' ||
+    !chat.created_at.endsWith('Z') || Number.isNaN(Date.parse(chat.created_at)))) {
+    throw new ApiError(response.status, 'Invalid history response')
+  }
+  return data.chats
+}

@@ -1,3 +1,5 @@
+import os
+import secrets
 import runpy
 import tempfile
 import unittest
@@ -8,7 +10,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import inspect
 from sqlalchemy.orm import Session
 
-from app import database, main
+from app import database
+
+# Import the server with isolated required configuration; no local .env needed.
+with patch.dict(os.environ, {"SECRET_KEY": secrets.token_urlsafe(32), "SESSION_HTTPS_ONLY": "false"}):
+    from app import main
 from app.database import build_engine, get_db
 from app.models import Chat, User
 from app.routers import chat as chat_router
@@ -17,6 +23,7 @@ from app.services.auth import verify_password
 
 class ServerAssemblyTests(unittest.TestCase):
     def setUp(self):
+        self.enterContext(patch.dict(os.environ, {"SECRET_KEY": secrets.token_urlsafe(32), "SESSION_HTTPS_ONLY": "false"}))
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         self.engine = build_engine(f"sqlite:///{Path(directory.name) / 'server.db'}")
