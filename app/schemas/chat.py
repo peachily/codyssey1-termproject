@@ -22,6 +22,10 @@ class ChatResponse(BaseModel):
     created_at: datetime
 
 
+class ChatHistoryResponse(BaseModel):
+    chats: list[ChatResponse]
+
+
 class PrescriptionResponse(BaseModel):
     keyword: str
     color: str
