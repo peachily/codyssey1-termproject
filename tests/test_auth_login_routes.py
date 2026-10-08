@@ -7,7 +7,7 @@ from http.cookies import SimpleCookie
 from pathlib import Path
 from unittest.mock import patch
 
-from fastapi import Request
+from fastapi import APIRouter, Request
 from fastapi.testclient import TestClient
 from sqlalchemy import event, select
 from sqlalchemy.exc import OperationalError
@@ -49,7 +49,7 @@ class LoginRouteTests(unittest.TestCase):
         self.app = self.make_app()
         self.client = self.enterContext(TestClient(self.app))
 
-    def make_app(self, https_only=False):
+    def make_app(self, https_only=False, with_frontend=None):
         # 테스트 환경에서 실제 서버의 라우터·세션 설정 재사용
         environment = {
             "SECRET_KEY": self.secret_key,
@@ -57,6 +57,16 @@ class LoginRouteTests(unittest.TestCase):
             "DATABASE_URL": "sqlite:///:memory:",
         }
         main_path = Path(__file__).resolve().parents[1] / "app" / "main.py"
+        if with_frontend is not None:
+            root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+            isolated_main = root / "app" / "main.py"
+            isolated_main.parent.mkdir()
+            isolated_main.write_text(main_path.read_text(), encoding="utf-8")
+            main_path = isolated_main
+            if with_frontend:
+                dist = root / "frontend" / "dist"
+                dist.mkdir(parents=True)
+                (dist / "index.html").write_text("<html>test frontend</html>")
         with patch.dict(os.environ, environment, clear=True):
             with patch.object(database, "engine", self.engine):
                 server = runpy.run_path(str(main_path), run_name="login_routes_test_server")
@@ -70,17 +80,36 @@ class LoginRouteTests(unittest.TestCase):
         self.addCleanup(app.dependency_overrides.clear)
 
         # 세션 준비·조회는 테스트 앱에서만 제공
-        @app.post("/test-session")
+        test_routes = APIRouter()
+
+        @test_routes.post("/test-session")
         def set_session(payload: dict, request: Request):
             request.session.clear()
             request.session.update(payload)
             return dict(request.session)
 
-        @app.get("/test-session")
+        @test_routes.get("/test-session")
         def read_session(request: Request):
             return dict(request.session)
 
+        # Test-only helpers must precede the catch-all frontend mount.
+        app.router.routes[0:0] = test_routes.routes
         return app
+
+    def test_session_flow_with_and_without_frontend_build(self):
+        for with_frontend in (False, True):
+            with self.subTest(with_frontend=with_frontend):
+                app = self.make_app(with_frontend=with_frontend)
+                with TestClient(app) as client:
+                    client.post("/test-session", json={"user_id": self.other_id, "old": True})
+                    self.assertEqual(client.post("/api/auth/login", json=self.payload()).status_code, 200)
+                    self.assertEqual(self.session(client), {"user_id": self.user_id})
+                    self.assertEqual(client.get("/api/auth/me").json()["id"], self.user_id)
+                    self.assertEqual(client.post("/api/auth/logout").status_code, 200)
+                    self.assertEqual(self.session(client), {})
+                    self.assertEqual(client.get("/api/auth/me").status_code, 401)
+                    if with_frontend:
+                        self.assertIn("test frontend", client.get("/").text)
 
     def payload(self, **overrides):
         return {"username": self.username, "password": self.password, **overrides}
