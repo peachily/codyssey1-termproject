@@ -1,5 +1,7 @@
 # 데이터베이스 구조 및 확인 방법
 
+사용자와 대화 데이터의 구조 및 사용자별 기록을 읽기 전용으로 검증하는 방법을 설명합니다.
+
 ## ERD
 
 ![KKAMURUK ERD](diagrams/kkamuruk-erd.png)
